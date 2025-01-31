@@ -229,10 +229,70 @@
         const fundError = document.getElementById('fundError');
         const fundSuccess = document.getElementById('fundSuccess');
 
+        // Sayfa içeriği elementleri
+        const pageTitle = document.getElementById('pageTitle');
+        const dashboardContent = document.getElementById('dashboardContent');
+        const fundsContent = document.getElementById('fundsContent');
+        const settingsContent = document.getElementById('settingsContent');
+
         // Token kontrolü
         const token = localStorage.getItem('adminToken');
         if (!token) {
             window.location.href = 'index.html';
+        }
+
+        // Menü işlevleri
+        document.getElementById('dashboardLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showDashboard();
+        });
+
+        document.getElementById('fundsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showFunds();
+        });
+
+        document.getElementById('settingsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showSettings();
+        });
+
+        document.getElementById('logoutLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('adminToken');
+            window.location.href = 'index.html';
+        });
+
+        // Sayfa içeriği fonksiyonları
+        function showDashboard() {
+            pageTitle.textContent = 'Dashboard';
+            dashboardContent.style.display = 'block';
+            fundsContent.style.display = 'none';
+            settingsContent.style.display = 'none';
+            setActiveLink('dashboardLink');
+        }
+
+        function showFunds() {
+            pageTitle.textContent = 'Fon Yönetimi';
+            dashboardContent.style.display = 'none';
+            fundsContent.style.display = 'block';
+            settingsContent.style.display = 'none';
+            setActiveLink('fundsLink');
+        }
+
+        function showSettings() {
+            pageTitle.textContent = 'Ayarlar';
+            dashboardContent.style.display = 'none';
+            fundsContent.style.display = 'none';
+            settingsContent.style.display = 'block';
+            setActiveLink('settingsLink');
+        }
+
+        function setActiveLink(linkId) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.getElementById(linkId).classList.add('active');
         }
 
         // Fonları listele
@@ -243,6 +303,11 @@
                         'Authorization': `Bearer ${token}`
                     }
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 const funds = data.funds || {};
                 
@@ -264,9 +329,19 @@
                 });
             } catch (error) {
                 console.error('Fonlar yüklenirken hata:', error);
-                alert('Fonlar yüklenirken bir hata oluştu!');
+                alert(`Fonlar yüklenirken hata: ${error.message}`);
             }
         }
+
+        // Yeni fon ekle butonu
+        document.getElementById('addFundBtn').addEventListener('click', () => {
+            document.getElementById('fundCode').value = '';
+            document.getElementById('fundName').value = '';
+            document.getElementById('fundManagementFee').value = '';
+            document.getElementById('fundError').style.display = 'none';
+            document.getElementById('fundSuccess').style.display = 'none';
+            fundModal.show();
+        });
 
         // Fon ekle/güncelle
         document.getElementById('saveFundBtn').addEventListener('click', async () => {
@@ -351,8 +426,11 @@
             }
         }
 
-        // Sayfa yüklendiğinde fonları listele
+        // Sayfa yüklendiğinde
         document.addEventListener('DOMContentLoaded', () => {
+            // Varsayılan olarak dashboard'u göster
+            showDashboard();
+            // Fonları yükle
             loadFunds();
         });
     </script>
