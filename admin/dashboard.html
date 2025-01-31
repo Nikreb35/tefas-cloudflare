@@ -305,6 +305,12 @@
                 const data = await response.json();
                 const funds = data.funds || {};
                 
+                // Dashboard istatistiklerini güncelle
+                document.getElementById('activeFunds').textContent = Object.keys(funds).length;
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('tr-TR');
+                document.getElementById('totalVisits').textContent = data.stats?.totalVisits || 0;
+                
+                // Fon tablosunu güncelle
                 const tbody = document.querySelector('#fundsTable tbody');
                 tbody.innerHTML = '';
                 
@@ -429,5 +435,4 @@
         });
     </script>
 </body>
-</html> 
 </html> 

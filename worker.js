@@ -305,6 +305,26 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // İlk çalıştırmada varsayılan fonları ekle
+    const funds = await env.ADMIN_STORE.get('funds', 'json');
+    if (!funds) {
+      const defaultFunds = {
+        'NJR': {
+          name: 'Neo Portföy Yeni Teknolojiler Değişken Fon',
+          managementFee: 3.65
+        },
+        'TI2': {
+          name: 'İş Portföy Elektrikli Araçlar Karma Fon',
+          managementFee: 3.65
+        },
+        'HPT': {
+          name: 'HSBC Portföy Teknoloji Şirketleri Fonu',
+          managementFee: 3.65
+        }
+      };
+      await env.ADMIN_STORE.put('funds', JSON.stringify(defaultFunds));
+    }
+
     // Admin endpoint kontrolü
     if (url.pathname.startsWith('/admin')) {
       return handleAdminRequest(request, env);
