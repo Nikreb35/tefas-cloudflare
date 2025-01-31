@@ -2,6 +2,15 @@ addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
 
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
+  'Access-Control-Max-Age': '86400',
+  'Access-Control-Expose-Headers': '*'
+}
+
 // Admin bilgilerini environment variables'dan al
 const ADMIN_CREDENTIALS = {
   username: ADMIN_USERNAME || 'admin', // Fallback değer
@@ -16,7 +25,7 @@ let ACTIVE_FUNDS = [
 ]
 
 // Token kontrolü fonksiyonu
-async function verifyToken(request, corsHeaders) {
+async function verifyToken(request) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return new Response(JSON.stringify({ error: 'Token gerekli' }), {
@@ -37,18 +46,13 @@ async function verifyToken(request, corsHeaders) {
 }
 
 async function handleRequest(request) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
-    'Access-Control-Max-Age': '86400',
-    'Access-Control-Expose-Headers': '*',
-    'Content-Type': 'application/json'
-  }
-
+  // OPTIONS isteği için CORS headers döndür
   if (request.method === 'OPTIONS') {
     return new Response(null, {
-      headers: corsHeaders
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
     })
   }
 
@@ -56,32 +60,38 @@ async function handleRequest(request) {
   
   // Admin işlemleri için endpoint'ler
   if (url.pathname === '/admin/login') {
-    return handleAdminLogin(request, corsHeaders)
+    return handleAdminLogin(request)
   }
 
   // Token kontrolü gerektiren endpoint'ler
   if (url.pathname === '/admin/change-password' || url.pathname === '/admin/funds') {
-    const tokenError = await verifyToken(request, corsHeaders);
+    const tokenError = await verifyToken(request);
     if (tokenError) return tokenError;
   }
   
   if (url.pathname === '/admin/change-password') {
-    return handleChangePassword(request, corsHeaders)
+    return handleChangePassword(request)
   }
 
   // Fon yönetimi endpoint'leri
   if (url.pathname === '/admin/funds') {
     switch (request.method) {
       case 'GET':
-        return handleGetFunds(corsHeaders)
+        return handleGetFunds()
       case 'POST':
-        return handleAddFund(request, corsHeaders)
+        return handleAddFund(request)
       case 'PUT':
-        return handleUpdateFund(request, corsHeaders)
+        return handleUpdateFund(request)
       case 'DELETE':
-        return handleDeleteFund(request, corsHeaders)
+        return handleDeleteFund(request)
       default:
-        return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+        return new Response('Method not allowed', { 
+          status: 405, 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        })
     }
   }
 
@@ -132,28 +142,56 @@ async function handleRequest(request) {
   }
 }
 
-async function handleAdminLogin(request, corsHeaders) {
+async function handleAdminLogin(request) {
   if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
-  }
-
-  const { username, password } = await request.json()
-
-  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-    return new Response(JSON.stringify({ success: true }), {
-      headers: corsHeaders
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
     })
   }
 
-  return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-    status: 401,
-    headers: corsHeaders
-  })
+  try {
+    const { username, password } = await request.json()
+
+    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      })
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+      status: 401,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Invalid request' }), {
+      status: 400,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
+  }
 }
 
-async function handleChangePassword(request, corsHeaders) {
+async function handleChangePassword(request) {
   if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
   }
 
   try {
@@ -162,14 +200,20 @@ async function handleChangePassword(request, corsHeaders) {
     if (currentPassword !== ADMIN_CREDENTIALS.password) {
       return new Response(JSON.stringify({ error: 'Mevcut şifre yanlış' }), {
         status: 401,
-        headers: corsHeaders
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       })
     }
 
     if (!newPassword || newPassword.length < 6) {
       return new Response(JSON.stringify({ error: 'Yeni şifre en az 6 karakter olmalıdır' }), {
         status: 400,
-        headers: corsHeaders
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       })
     }
 
@@ -177,24 +221,30 @@ async function handleChangePassword(request, corsHeaders) {
     ADMIN_CREDENTIALS.password = newPassword
 
     return new Response(JSON.stringify({ success: true, message: 'Şifre başarıyla değiştirildi' }), {
-      headers: corsHeaders
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Şifre değiştirme işlemi başarısız' }), {
       status: 500,
-      headers: corsHeaders
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
     })
   }
 }
 
 // Fon yönetimi fonksiyonları
-async function handleGetFunds(corsHeaders) {
+async function handleGetFunds() {
   return new Response(JSON.stringify(ACTIVE_FUNDS), {
     headers: corsHeaders
   })
 }
 
-async function handleAddFund(request, corsHeaders) {
+async function handleAddFund(request) {
   try {
     const fund = await request.json()
     
@@ -229,7 +279,7 @@ async function handleAddFund(request, corsHeaders) {
   }
 }
 
-async function handleUpdateFund(request, corsHeaders) {
+async function handleUpdateFund(request) {
   try {
     const fund = await request.json()
     
@@ -265,7 +315,7 @@ async function handleUpdateFund(request, corsHeaders) {
   }
 }
 
-async function handleDeleteFund(request, corsHeaders) {
+async function handleDeleteFund(request) {
   try {
     const { code } = await request.json()
     
