@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 // Admin token'ı environment variable'dan al
-const ADMIN_TOKEN = env.ADMIN_TOKEN;
+const ADMIN_PASSWORD = env.ADMIN_PASSWORD;
 
 // Ziyaretçi bilgilerini kaydet
 async function logVisitor(request, env) {
@@ -95,7 +95,7 @@ async function handleAuth(request) {
     });
   }
   const token = authHeader.split(' ')[1];
-  if (token !== ADMIN_TOKEN) {
+  if (token !== ADMIN_PASSWORD) {
     return new Response(JSON.stringify({ error: 'Invalid token' }), {
       status: 401,
       headers: corsHeaders
