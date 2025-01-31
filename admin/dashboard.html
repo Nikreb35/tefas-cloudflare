@@ -350,49 +350,10 @@
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('tr-TR');
         }
 
-        function saveFund() {
-            const code = document.getElementById('fundCode').value;
-            const name = document.getElementById('fundName').value;
-            const active = document.getElementById('fundStatus').checked;
-
-            if (!code || !name) {
-                fundError.textContent = 'Tüm alanları doldurun!';
-                fundError.style.display = 'block';
-                return;
-            }
-
-            const existingFundIndex = activeFunds.findIndex(f => f.code === code);
-            if (existingFundIndex === -1) {
-                // Yeni fon ekle
-                activeFunds.push({ code, name, active });
-            } else {
-                // Mevcut fonu güncelle
-                activeFunds[existingFundIndex] = { code, name, active };
-            }
-
-            updateFundsTable();
-            updateDashboardStats();
-            fundModal.hide();
-            fundForm.reset();
-        }
-
-        function editFund(code) {
-            const fund = activeFunds.find(f => f.code === code);
-            if (fund) {
-                document.getElementById('fundModalTitle').textContent = 'Fon Düzenle';
-                document.getElementById('fundCode').value = fund.code;
-                document.getElementById('fundName').value = fund.name;
-                document.getElementById('fundStatus').checked = fund.active;
-                fundModal.show();
-            }
-        }
-
-        function deleteFund(code) {
-            if (confirm('Bu fonu silmek istediğinize emin misiniz?')) {
-                activeFunds = activeFunds.filter(f => f.code !== code);
-                updateFundsTable();
-                updateDashboardStats();
-            }
+        // Çıkış yapma fonksiyonu
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/';
         }
 
         // Şifre değiştirme fonksiyonu
@@ -419,11 +380,15 @@
             }
 
             try {
+                const token = localStorage.getItem('adminToken');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
                 const response = await fetch('/admin/change-password', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers,
                     body: JSON.stringify({
                         currentPassword,
                         newPassword
@@ -435,6 +400,8 @@
                 if (response.ok) {
                     passwordSuccess.textContent = 'Şifre başarıyla değiştirildi!';
                     passwordSuccess.style.display = 'block';
+                    // Token'ı güncelle
+                    localStorage.setItem('adminToken', newPassword);
                     setTimeout(() => {
                         changePasswordModal.hide();
                         changePasswordForm.reset();
@@ -449,21 +416,94 @@
             }
         }
 
-        // Çıkış yapma fonksiyonu
-        function logout() {
-            localStorage.removeItem('isLoggedIn');
-            window.location.href = '/admin/';
+        // Fon yönetimi fonksiyonları
+        async function saveFund() {
+            const code = document.getElementById('fundCode').value;
+            const name = document.getElementById('fundName').value;
+            const active = document.getElementById('fundStatus').checked;
+
+            if (!code || !name) {
+                fundError.textContent = 'Tüm alanları doldurun!';
+                fundError.style.display = 'block';
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+
+                const method = activeFunds.some(f => f.code === code) ? 'PUT' : 'POST';
+                const response = await fetch('/admin/funds', {
+                    method,
+                    headers,
+                    body: JSON.stringify({ code, name, active })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Fon listesini güncelle
+                    if (method === 'POST') {
+                        activeFunds.push({ code, name, active });
+                    } else {
+                        const index = activeFunds.findIndex(f => f.code === code);
+                        activeFunds[index] = { code, name, active };
+                    }
+                    updateFundsTable();
+                    updateDashboardStats();
+                    fundModal.hide();
+                    fundForm.reset();
+                } else {
+                    fundError.textContent = data.error || 'İşlem başarısız!';
+                    fundError.style.display = 'block';
+                }
+            } catch (error) {
+                fundError.textContent = 'Sistem hatası: İşlem başarısız';
+                fundError.style.display = 'block';
+            }
+        }
+
+        async function deleteFund(code) {
+            if (confirm('Bu fonu silmek istediğinize emin misiniz?')) {
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+
+                    const response = await fetch('/admin/funds', {
+                        method: 'DELETE',
+                        headers,
+                        body: JSON.stringify({ code })
+                    });
+
+                    if (response.ok) {
+                        activeFunds = activeFunds.filter(f => f.code !== code);
+                        updateFundsTable();
+                        updateDashboardStats();
+                    } else {
+                        alert('Fon silme işlemi başarısız!');
+                    }
+                } catch (error) {
+                    alert('Sistem hatası: Fon silme işlemi başarısız');
+                }
+            }
         }
 
         // Sayfa yüklendiğinde
         document.addEventListener('DOMContentLoaded', () => {
-            // Login kontrolü
-            if (!localStorage.getItem('isLoggedIn')) {
+            // Token kontrolü
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
                 window.location.href = '/admin/';
                 return;
             }
 
-            // Dashboard verilerini güncelle
+            // İlk yüklemede verileri getir
             updateDashboardStats();
         });
     </script>

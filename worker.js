@@ -14,6 +14,27 @@ let ACTIVE_FUNDS = [
   { code: 'AFT', name: 'Ak Portföy Yeni Teknolojiler Yabancı Hisse Senedi Fonu', active: true }
 ]
 
+// Token kontrolü fonksiyonu
+async function verifyToken(request, corsHeaders) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Token gerekli' }), {
+      status: 401,
+      headers: corsHeaders
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (token !== ADMIN_CREDENTIALS.password) {
+    return new Response(JSON.stringify({ error: 'Geçersiz token' }), {
+      status: 401,
+      headers: corsHeaders
+    });
+  }
+
+  return null;
+}
+
 async function handleRequest(request) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -35,6 +56,12 @@ async function handleRequest(request) {
   // Admin işlemleri için endpoint'ler
   if (url.pathname === '/admin/login') {
     return handleAdminLogin(request, corsHeaders)
+  }
+
+  // Token kontrolü gerektiren endpoint'ler
+  if (url.pathname === '/admin/change-password' || url.pathname === '/admin/funds') {
+    const tokenError = await verifyToken(request, corsHeaders);
+    if (tokenError) return tokenError;
   }
   
   if (url.pathname === '/admin/change-password') {
