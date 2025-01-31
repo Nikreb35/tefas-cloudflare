@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+    <title>TEFAS Fon Takip</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to bottom, #9370DB, #FFC0CB);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .bist-frame {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .source-text {
+            font-size: 12px;
+            color: #7F8C8D;
+        }
+        .update-time {
+            font-size: 12px;
+            color: #7F8C8D;
+            text-align: right;
+        }
+        .getiri-span, .guncel-endeks, .yuzde-degisim {
+            font-weight: bold;
+        }
+        .value-positive { 
+            color: #00b300 !important; 
+            font-weight: 700 !important;
+        }
+        .value-negative { 
+            color: #cc0000 !important;
+            font-weight: 700 !important;
+        }
+        .value-neutral { color: #7F8C8D; }
+        .text-purple {
+            color: #9370DB;
+        }
+        .tahvil-item {
+            text-align: left;
+            padding: 10px;
+        }
+        .tahvil-title {
+            color: #9370DB;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .tahvil-value {
+            color: #000;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .tahvil-change {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #000;
+        }
+        .tahvil-change .value-number {
+            font-weight: 700;
+        }
+        .tahvil-change .value-number.positive {
+            color: #00b300;
+        }
+        .tahvil-change .value-number.negative {
+            color: #cc0000;
+        }
+
+        /* Mobil Uyumluluk */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 0;
+            }
+            .card, .bist-frame {
+                padding: 15px;
+            }
+            h4 {
+                font-size: 1rem;
+            }
+            .tahvil-title {
+                font-size: 0.9rem;
+            }
+            .tahvil-value, .tahvil-change {
+                font-size: 0.85rem;
+            }
+            .source-text {
+                font-size: 10px;
+            }
+            .row > .col {
+                padding: 5px;
+            }
+            input[type="number"] {
+                font-size: 0.9rem;
+                padding: 4px 8px;
+            }
+            .fw-bold {
+                font-size: 0.85rem;
+            }
+            #brutToplam, #yuToplam, #yuVeStopajToplam {
+                font-size: 0.85rem;
+            }
+            .text-muted {
+                font-size: 0.8rem;
+            }
+            .col-4 {
+                padding: 0 5px;
+            }
+            .d-flex {
+                flex-wrap: wrap;
+            }
+            .d-flex span {
+                width: 100%;
+                text-align: left;
+                margin-bottom: 3px;
+            }
+            .d-flex span:last-child {
+                text-align: right;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .row.mb-4 .col {
+                flex: 0 0 auto;
+                width: 25%;
+            }
+            .row.mb-3 .col {
+                flex: 0 0 auto;
+                width: 25%;
+            }
+            .tahvil-item {
+                padding: 5px;
+            }
+            .col-8, .col-4 {
+                flex: 0 0 auto;
+                width: 100%;
+            }
+            .d-flex {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card p-4">
+            <div class="row mb-4">
+                <div class="col text-center">
+                    <h4>FON ADI</h4>
+                </div>
+                <div class="col text-center">
+                    <h4>GÜNLÜK GETİRİ ORANI</h4>
+                </div>
+                <div class="col text-center">
+                    <h4>HESAPLA</h4>
+                </div>
+                <div class="col text-center">
+                    <h4>SONUÇ</h4>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col text-center">NJR</div>
+                <div class="col text-center">
+                    <span class="getiri-span" data-fon="NJR">-</span>
+                </div>
+                <div class="col text-center">
+                    <input type="number" class="form-control" placeholder="Tutar giriniz">
+                </div>
+                <div class="col text-center">-</div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col text-center">TBT</div>
+                <div class="col text-center">
+                    <span class="getiri-span" data-fon="TBT">-</span>
+                </div>
+                <div class="col text-center">
+                    <input type="number" class="form-control" placeholder="Tutar giriniz">
+                </div>
+                <div class="col text-center">-</div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col text-center">HPT</div>
+                <div class="col text-center">
+                    <span class="getiri-span" data-fon="HPT">-</span>
+                </div>
+                <div class="col text-center">
+                    <input type="number" class="form-control" placeholder="Tutar giriniz">
+                </div>
+                <div class="col text-center">-</div>
+            </div>
+
+            <div class="border-top pt-3 mt-3">
+                <div class="row">
+                    <div class="col-8"></div>
+                    <div class="col-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-success">BRÜT TOPLAM</span>
+                            <span id="brutToplam" class="fw-bold">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="fw-bold text-primary">Y.Ü HESAPLANMIŞ TOPLAM</span>
+                            <span id="yuToplam" class="fw-bold">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="fw-bold text-info">Y.Ü ve STOPAJ HESAPLANMIŞ TOPLAM</span>
+                            <span id="yuVeStopajToplam" class="fw-bold">-</span>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">*Y.Ü = YÖNETİM ÜCRETİ</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <p class="source-text mb-0">www.tefas.gov.tr adresinden alınmıştır.</p>
+                <small class="text-muted">Son Güncelleme: <span id="tefasLastUpdate">-</span></small>
+            </div>
+        </div>
+
+        <div class="bist-frame">
+            <h5 class="mb-4 fw-bold text-center text-purple">TAHVİL</h5>
+            <div class="row mb-4" id="tahvilVerileri">
+                <div class="col">
+                    <div class="tahvil-item">
+                        <div class="tahvil-title">TR 2 YILLIK TAHVİL</div>
+                        <div class="tahvil-value">SON VERİ: %38,09</div>
+                        <div class="tahvil-change">DEĞİŞİM: <span class="value-number">%0,00</span></div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="tahvil-item">
+                        <div class="tahvil-title">TR 5 YILLIK TAHVİL</div>
+                        <div class="tahvil-value">SON VERİ: %30,15</div>
+                        <div class="tahvil-change">DEĞİŞİM: <span class="value-number">%0,00</span></div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="tahvil-item">
+                        <div class="tahvil-title">TR 10 YILLIK TAHVİL</div>
+                        <div class="tahvil-value">SON VERİ: %26,86</div>
+                        <div class="tahvil-change">DEĞİŞİM: <span class="value-number">%0,00</span></div>
+                    </div>
+                </div>
+            </div>
+            <p class="source-text mb-0">www.bloomberght.com adresinden alınmıştır.</p>
+            <p class="source-text mb-0">Son Güncelleme: <span id="tahvilLastUpdate">-</span></p>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const API_URL = 'https://tefas-proxy.techbrkn.workers.dev';
+        
+        // Yönetim ücretleri
+        function getYonetimUcretleri() {
+            const storedUcretler = JSON.parse(localStorage.getItem('yonetimUcretleri') || '{}');
+            return {
+                'TBT': 2.19,
+                'NJR': 1.25,
+                'HPT': 2.37,
+                ...storedUcretler
+            };
+        }
+
+        // Verileri localStorage'dan al
+        function getStoredData() {
+            const today = new Date().toLocaleDateString('tr-TR');
+            const storedData = localStorage.getItem('tefasData');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                if (data.date === today && data.tefas && 
+                    Object.values(data.tefas).some(value => value !== null && value !== undefined)) {
+                    return data;
+                }
+            }
+            localStorage.removeItem('tefasData');
+            return null;
+        }
+
+        // Verileri localStorage'a kaydet
+        function storeData(data) {
+            if (!data.tefas || !Object.values(data.tefas).some(value => value !== null && value !== undefined)) {
+                console.log('Geçersiz veri, kaydedilmedi:', data);
+                return;
+            }
+            const today = new Date().toLocaleDateString('tr-TR');
+            localStorage.setItem('tefasData', JSON.stringify({
+                date: today,
+                timestamp: new Date().getTime(),
+                ...data
+            }));
+            console.log('Veriler kaydedildi:', data);
+        }
+
+        // TEFAS verilerini göster
+        function displayTefasData(data) {
+            if (data.tefas) {
+                Object.entries(data.tefas).forEach(([fonKod, getiriValue]) => {
+                    console.log(`${fonKod} getiri değeri:`, getiriValue);
+                    if (getiriValue) {
+                        const getiri = parseFloat(getiriValue.replace('%', '').replace(',', '.'));
+                        const getiriStr = `%${getiri.toFixed(4)}`;
+                        
+                        $(`.getiri-span[data-fon="${fonKod}"]`)
+                            .text(getiriStr)
+                            .removeClass('value-positive value-negative')
+                            .addClass(getiri >= 0 ? 'value-positive' : 'value-negative');
+                    } else {
+                        $(`.getiri-span[data-fon="${fonKod}"]`).text('-');
+                    }
+                });
+            }
+        }
+
+        // TEFAS verilerini güncelle
+        async function updateData() {
+            try {
+                const storedData = getStoredData();
+                if (storedData) {
+                    console.log('Veriler localStorage\'dan alındı');
+                    displayTefasData(storedData);
+                    return;
+                }
+
+                console.log('Yeni veriler çekiliyor...');
+                
+                const requests = ['NJR', 'TBT', 'HPT'].map(fonKod => 
+                    fetch(API_URL, {
+                        method: 'GET',
+                        headers: {
+                            'target-url': `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${fonKod}`
+                        }
+                    })
+                );
+
+                const responses = await Promise.all(requests);
+                const newData = { tefas: {} };
+
+                for (let i = 0; i < responses.length; i++) {
+                    const fonKod = ['NJR', 'TBT', 'HPT'][i];
+                    const response = responses[i];
+
+                    if (response.ok) {
+                        const text = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(text, 'text/html');
+                        
+                        const getiriSelectors = [
+                            '.top-list > li:nth-child(2) > span:nth-child(3)',
+                            '.top-list > li:nth-child(2)',
+                            '#MainContent_UpdatePanel1 .top-list li span',
+                            '.main-indicators .top-list li span'
+                        ];
+
+                        let getiriValue = null;
+                        for (const selector of getiriSelectors) {
+                            const elements = doc.querySelectorAll(selector);
+                            for (const element of elements) {
+                                const text = element.textContent.trim();
+                                if (text && text.includes('%') && 
+                                    !text.includes('Haftalık') && 
+                                    !text.includes('Aylık') && 
+                                    !text.includes('Yıllık')) {
+                                    getiriValue = text;
+                                    break;
+                                }
+                            }
+                            if (getiriValue) break;
+                        }
+
+                        newData.tefas[fonKod] = getiriValue;
+                    }
+                }
+
+                storeData(newData);
+                displayTefasData(newData);
+                
+                // Son güncelleme zamanını güncelle
+                const now = new Date();
+                $('#tefasLastUpdate').text(now.toLocaleTimeString('tr-TR'));
+
+            } catch (error) {
+                console.error('Veri güncelleme hatası:', error);
+                const storedData = getStoredData();
+                if (storedData) {
+                    console.log('Hata nedeniyle localStorage\'daki veriler kullanıldı');
+                    displayTefasData(storedData);
+                }
+            }
+        }
+
+        // Hesaplama fonksiyonu
+        function hesaplaGetiri(tutar, getiriOrani, yonetimUcreti) {
+            const brutGetiri = tutar * (getiriOrani / 100);
+            const yonetimUcretiTutari = brutGetiri * (yonetimUcreti / 100);
+            const yuHesaplanmis = brutGetiri - yonetimUcretiTutari;
+            const yuVeStopajHesaplanmis = yuHesaplanmis * 0.90;
+            
+            return {
+                brut: brutGetiri,
+                yuHesaplanmis: yuHesaplanmis,
+                yuVeStopajHesaplanmis: yuVeStopajHesaplanmis
+            };
+        }
+
+        // Tahvil verilerini güncelle
+        async function updateTahvilVerileri() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'target-url': 'https://www.bloomberght.com/faiz-bono'
+                    }
+                });
+
+                if (response.ok) {
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // 2 Yıllık Tahvil
+                    const tahvil2Y = doc.querySelector('a[href*="tahvil/faiz"]');
+                    if (tahvil2Y) {
+                        const sonVeri = tahvil2Y.closest('tr').querySelector('td:nth-child(2)').textContent.trim();
+                        const degisim = tahvil2Y.closest('tr').querySelector('td:nth-child(3)').textContent.trim();
+                        const degisimValue = parseFloat(degisim.replace(',', '.'));
+                        
+                        $('#tahvilVerileri .col:nth-child(1) .tahvil-value').text(`SON VERİ: %${sonVeri}`);
+                        $('#tahvilVerileri .col:nth-child(1) .tahvil-change')
+                            .html(`DEĞİŞİM: <span class="value-number ${Math.abs(degisimValue) > 0 ? (degisimValue > 0 ? 'positive' : 'negative') : ''}">${degisim}</span>`);
+                    }
+
+                    // 5 Yıllık Tahvil
+                    const tahvil5Y = doc.querySelector('a[href*="tr-5-yillik-tahvil"]');
+                    if (tahvil5Y) {
+                        const sonVeri = tahvil5Y.closest('tr').querySelector('td:nth-child(2)').textContent.trim();
+                        const degisim = tahvil5Y.closest('tr').querySelector('td:nth-child(3)').textContent.trim();
+                        const degisimValue = parseFloat(degisim.replace(',', '.'));
+                        
+                        $('#tahvilVerileri .col:nth-child(2) .tahvil-value').text(`SON VERİ: %${sonVeri}`);
+                        $('#tahvilVerileri .col:nth-child(2) .tahvil-change')
+                            .html(`DEĞİŞİM: <span class="value-number ${Math.abs(degisimValue) > 0 ? (degisimValue > 0 ? 'positive' : 'negative') : ''}">${degisim}</span>`);
+                    }
+
+                    // 10 Yıllık Tahvil
+                    const tahvil10Y = doc.querySelector('a[href*="tr-10-yillik-tahvil"]');
+                    if (tahvil10Y) {
+                        const sonVeri = tahvil10Y.closest('tr').querySelector('td:nth-child(2)').textContent.trim();
+                        const degisim = tahvil10Y.closest('tr').querySelector('td:nth-child(3)').textContent.trim();
+                        const degisimValue = parseFloat(degisim.replace(',', '.'));
+                        
+                        $('#tahvilVerileri .col:nth-child(3) .tahvil-value').text(`SON VERİ: %${sonVeri}`);
+                        $('#tahvilVerileri .col:nth-child(3) .tahvil-change')
+                            .html(`DEĞİŞİM: <span class="value-number ${Math.abs(degisimValue) > 0 ? (degisimValue > 0 ? 'positive' : 'negative') : ''}">${degisim}</span>`);
+                    }
+                }
+
+                // Son güncelleme zamanını güncelle
+                const now = new Date();
+                $('#tahvilLastUpdate').text(now.toLocaleTimeString('tr-TR'));
+            } catch (error) {
+                console.error('Tahvil verilerini güncelleme hatası:', error);
+            }
+        }
+
+        // Mesai saatlerinde tahvil verilerini güncelle
+        function checkAndUpdateTahvil() {
+            const now = new Date();
+            const hour = now.getHours();
+            
+            // Mesai saatleri kontrolü (09:00-17:00)
+            if (hour >= 9 && hour < 17) {
+                updateTahvilVerileri();
+            }
+        }
+
+        // Sayfa yüklendiğinde
+        $(document).ready(function() {
+            // İlk güncellemeyi yap
+            updateData();
+            updateTahvilVerileri();
+            
+            // 5 dakikada bir tahvil verilerini güncelle
+            setInterval(checkAndUpdateTahvil, 5 * 60 * 1000);
+            
+            // Her saat başı TEFAS verilerini kontrol et
+            setInterval(() => {
+                const now = new Date();
+                if (now.getHours() === 0 || now.getHours() === 7) {
+                    updateData();
+                }
+            }, 60000);
+        });
+
+        // Hesaplama fonksiyonu
+        $('input[type="number"]').on('input', function() {
+            const value = parseFloat($(this).val());
+            const fonKod = $(this).closest('.row').find('.col:first').text();
+            const getiri = parseFloat($(this).closest('.row').find('.getiri-span').text().replace('%', '').replace(',', '.'));
+            const yonetimUcreti = getYonetimUcretleri()[fonKod] || 0;
+            
+            if (!isNaN(value) && !isNaN(getiri)) {
+                const sonuc = hesaplaGetiri(value, getiri, yonetimUcreti);
+                
+                const sonucText = sonuc.brut >= 0 ? 
+                    `+${sonuc.brut.toFixed(2)} | +${sonuc.yuHesaplanmis.toFixed(2)} | +${sonuc.yuVeStopajHesaplanmis.toFixed(2)}` :
+                    `${sonuc.brut.toFixed(2)} | ${sonuc.yuHesaplanmis.toFixed(2)} | ${sonuc.yuVeStopajHesaplanmis.toFixed(2)}`;
+                
+                const sonucArray = sonucText.split('|');
+                const sonucHtml = `
+                    <span class="text-success">${sonucArray[0]}</span> |
+                    <span class="text-primary">${sonucArray[1]}</span> |
+                    <span class="text-info">${sonucArray[2]}</span>
+                `;
+                
+                $(this).closest('.row').find('.col:last')
+                    .html(sonucHtml)
+                    .css('font-weight', 'bold');
+
+                // Toplamları hesapla
+                let brutToplam = 0;
+                let yuToplam = 0;
+                let yuVeStopajToplam = 0;
+                
+                $('input[type="number"]').each(function() {
+                    const inputValue = parseFloat($(this).val()) || 0;
+                    const inputFonKod = $(this).closest('.row').find('.col:first').text();
+                    const inputGetiri = parseFloat($(this).closest('.row').find('.getiri-span').text().replace('%', '').replace(',', '.')) || 0;
+                    const inputYonetimUcreti = getYonetimUcretleri()[inputFonKod] || 0;
+                    
+                    const inputSonuc = hesaplaGetiri(inputValue, inputGetiri, inputYonetimUcreti);
+                    brutToplam += inputSonuc.brut;
+                    yuToplam += inputSonuc.yuHesaplanmis;
+                    yuVeStopajToplam += inputSonuc.yuVeStopajHesaplanmis;
+                });
+
+                // Brüt toplam güncelle
+                $('#brutToplam').text(brutToplam >= 0 ? 
+                    `+${brutToplam.toFixed(2)}` : 
+                    brutToplam.toFixed(2))
+                    .removeClass('value-positive value-negative')
+                    .addClass(brutToplam >= 0 ? 'value-positive' : 'value-negative');
+
+                // Y.Ü Hesaplanmış toplam güncelle
+                $('#yuToplam').text(yuToplam >= 0 ? 
+                    `+${yuToplam.toFixed(2)}` : 
+                    yuToplam.toFixed(2))
+                    .removeClass('value-positive value-negative')
+                    .addClass(yuToplam >= 0 ? 'value-positive' : 'value-negative');
+
+                // Y.Ü ve Stopaj Hesaplanmış toplam güncelle
+                $('#yuVeStopajToplam').text(yuVeStopajToplam >= 0 ? 
+                    `+${yuVeStopajToplam.toFixed(2)}` : 
+                    yuVeStopajToplam.toFixed(2))
+                    .removeClass('value-positive value-negative')
+                    .addClass(yuVeStopajToplam >= 0 ? 'value-positive' : 'value-negative');
+            } else {
+                $(this).closest('.row').find('.col:last').text('-');
+            }
+        });
+    </script>
+</body>
+</html>
