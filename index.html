@@ -502,103 +502,85 @@
             }
         }
 
-        // Fonları oluştur
-        async function createFundRows() {
-            try {
-                const response = await fetch('https://tefas-admin.techbrkn.workers.dev/admin/data', {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('API yanıt vermedi');
-                }
-                const data = await response.json();
-                console.log('API yanıtı:', data);
-                
-                const funds = data.funds || {};
-                if (Object.keys(funds).length === 0) {
-                    console.log('Fon bulunamadı');
-                    return;
-                }
-                
-                // Mevcut satırları kullan, yeni satır oluşturma
-                Object.entries(funds).forEach(([code, fund]) => {
-                    const row = document.querySelector(`.row.mb-3 .col:first-child:contains('${code}')`).closest('.row');
-                    if (row) {
-                        const input = row.querySelector('input');
-                        input.addEventListener('input', function() {
-                            const value = parseFloat(this.value);
-                            const getiri = parseFloat(this.closest('.row').querySelector('.getiri-span').textContent.replace('%', '').replace(',', '.'));
-                            const yonetimUcreti = fund.managementFee;
-                            
-                            if (!isNaN(value) && !isNaN(getiri)) {
-                                const sonuc = hesaplaGetiri(value, getiri, yonetimUcreti);
-                                const sonucText = sonuc.brut >= 0 ? 
-                                    `+${sonuc.brut.toFixed(2)} | +${sonuc.yuHesaplanmis.toFixed(2)} | +${sonuc.yuVeStopajHesaplanmis.toFixed(2)}` :
-                                    `${sonuc.brut.toFixed(2)} | ${sonuc.yuHesaplanmis.toFixed(2)} | ${sonuc.yuVeStopajHesaplanmis.toFixed(2)}`;
-                                
-                                const sonucArray = sonucText.split('|');
-                                const sonucHtml = `
-                                    <span class="text-success">${sonucArray[0]}</span> |
-                                    <span class="text-primary">${sonucArray[1]}</span> |
-                                    <span class="text-info">${sonucArray[2]}</span>
-                                `;
-                                
-                                this.closest('.row').querySelector('.col:last-child').innerHTML = sonucHtml;
-
-                                // Toplamları hesapla
-                                let brutToplam = 0;
-                                let yuToplam = 0;
-                                let yuVeStopajToplam = 0;
-
-                                document.querySelectorAll('.row.mb-3 input[type="number"]').forEach(input => {
-                                    const value = parseFloat(input.value) || 0;
-                                    const getiri = parseFloat(input.closest('.row').querySelector('.getiri-span').textContent.replace('%', '').replace(',', '.')) || 0;
-                                    const code = input.closest('.row').querySelector('.col:first-child').textContent.trim();
-                                    const fund = funds[code];
-                                    if (fund) {
-                                        const sonuc = hesaplaGetiri(value, getiri, fund.managementFee);
-                                        brutToplam += sonuc.brut;
-                                        yuToplam += sonuc.yuHesaplanmis;
-                                        yuVeStopajToplam += sonuc.yuVeStopajHesaplanmis;
-                                    }
-                                });
-
-                                // Brüt toplam güncelle
-                                document.getElementById('brutToplam').textContent = brutToplam >= 0 ? 
-                                    `+${brutToplam.toFixed(2)}` : 
-                                    brutToplam.toFixed(2);
-                                document.getElementById('brutToplam').className = 'fw-bold ' + (brutToplam >= 0 ? 'value-positive' : 'value-negative');
-
-                                // Y.Ü Hesaplanmış toplam güncelle
-                                document.getElementById('yuToplam').textContent = yuToplam >= 0 ? 
-                                    `+${yuToplam.toFixed(2)}` : 
-                                    yuToplam.toFixed(2);
-                                document.getElementById('yuToplam').className = 'fw-bold ' + (yuToplam >= 0 ? 'value-positive' : 'value-negative');
-
-                                // Y.Ü ve Stopaj Hesaplanmış toplam güncelle
-                                document.getElementById('yuVeStopajToplam').textContent = yuVeStopajToplam >= 0 ? 
-                                    `+${yuVeStopajToplam.toFixed(2)}` : 
-                                    yuVeStopajToplam.toFixed(2);
-                                document.getElementById('yuVeStopajToplam').className = 'fw-bold ' + (yuVeStopajToplam >= 0 ? 'value-positive' : 'value-negative');
-                            } else {
-                                this.closest('.row').querySelector('.col:last-child').textContent = '-';
-                            }
-                        });
-                    }
-                });
-            } catch (error) {
-                console.error('Fonlar oluşturulamadı:', error);
-            }
-        }
-
         // Sayfa yüklendiğinde
         $(document).ready(async function() {
             // İlk güncellemeyi yap
-            await createFundRows();
             updateData();
             updateTahvilVerileri();
+            
+            // Input event listener'ları ekle
+            $('input[type="number"]').on('input', async function() {
+                const value = parseFloat($(this).val());
+                const fonKod = $(this).closest('.row').find('.col:first-child').text().trim();
+                const getiri = parseFloat($(this).closest('.row').find('.getiri-span').text().replace('%', '').replace(',', '.'));
+                
+                try {
+                    const response = await fetch('https://tefas-admin.techbrkn.workers.dev/admin/data');
+                    const data = await response.json();
+                    const funds = data.funds || {};
+                    const fund = funds[fonKod];
+                    
+                    if (fund && !isNaN(value) && !isNaN(getiri)) {
+                        const sonuc = hesaplaGetiri(value, getiri, fund.managementFee);
+                        const sonucText = sonuc.brut >= 0 ? 
+                            `+${sonuc.brut.toFixed(2)} | +${sonuc.yuHesaplanmis.toFixed(2)} | +${sonuc.yuVeStopajHesaplanmis.toFixed(2)}` :
+                            `${sonuc.brut.toFixed(2)} | ${sonuc.yuHesaplanmis.toFixed(2)} | ${sonuc.yuVeStopajHesaplanmis.toFixed(2)}`;
+                        
+                        const sonucArray = sonucText.split('|');
+                        const sonucHtml = `
+                            <span class="text-success">${sonucArray[0]}</span> |
+                            <span class="text-primary">${sonucArray[1]}</span> |
+                            <span class="text-info">${sonucArray[2]}</span>
+                        `;
+                        
+                        $(this).closest('.row').find('.col:last-child')
+                            .html(sonucHtml)
+                            .css('font-weight', 'bold');
+
+                        // Toplamları hesapla
+                        let brutToplam = 0;
+                        let yuToplam = 0;
+                        let yuVeStopajToplam = 0;
+                        
+                        $('input[type="number"]').each(function() {
+                            const inputValue = parseFloat($(this).val()) || 0;
+                            const inputFonKod = $(this).closest('.row').find('.col:first-child').text().trim();
+                            const inputGetiri = parseFloat($(this).closest('.row').find('.getiri-span').text().replace('%', '').replace(',', '.')) || 0;
+                            const inputFund = funds[inputFonKod];
+                            
+                            if (inputFund) {
+                                const inputSonuc = hesaplaGetiri(inputValue, inputGetiri, inputFund.managementFee);
+                                brutToplam += inputSonuc.brut;
+                                yuToplam += inputSonuc.yuHesaplanmis;
+                                yuVeStopajToplam += inputSonuc.yuVeStopajHesaplanmis;
+                            }
+                        });
+
+                        // Brüt toplam güncelle
+                        $('#brutToplam')
+                            .text(brutToplam >= 0 ? `+${brutToplam.toFixed(2)}` : brutToplam.toFixed(2))
+                            .removeClass('value-positive value-negative')
+                            .addClass(brutToplam >= 0 ? 'value-positive' : 'value-negative');
+
+                        // Y.Ü Hesaplanmış toplam güncelle
+                        $('#yuToplam')
+                            .text(yuToplam >= 0 ? `+${yuToplam.toFixed(2)}` : yuToplam.toFixed(2))
+                            .removeClass('value-positive value-negative')
+                            .addClass(yuToplam >= 0 ? 'value-positive' : 'value-negative');
+
+                        // Y.Ü ve Stopaj Hesaplanmış toplam güncelle
+                        $('#yuVeStopajToplam')
+                            .text(yuVeStopajToplam >= 0 ? `+${yuVeStopajToplam.toFixed(2)}` : yuVeStopajToplam.toFixed(2))
+                            .removeClass('value-positive value-negative')
+                            .addClass(yuVeStopajToplam >= 0 ? 'value-positive' : 'value-negative');
+                    } else {
+                        $(this).closest('.row').find('.col:last-child').text('-');
+                    }
+                } catch (error) {
+                    console.error('Hesaplama hatası:', error);
+                    $(this).closest('.row').find('.col:last-child').text('-');
+                }
+            });
             
             // 5 dakikada bir tahvil verilerini güncelle
             setInterval(checkAndUpdateTahvil, 5 * 60 * 1000);
