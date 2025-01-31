@@ -2,10 +2,22 @@ addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
 
+const ADMIN_CREDENTIALS = {
+  username: 'admin',
+  password: 'your-secret-token'
+}
+
+// Aktif fonlar listesi
+let ACTIVE_FUNDS = [
+  { code: 'YAF', name: 'Yapı Kredi Portföy Yabancı Teknoloji Sektörü Hisse Senedi Fonu', active: true },
+  { code: 'TI2', name: 'İş Portföy Elektrikli Araçlar Karma Fon', active: true },
+  { code: 'AFT', name: 'Ak Portföy Yeni Teknolojiler Yabancı Hisse Senedi Fonu', active: true }
+]
+
 async function handleRequest(request) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': '*',
@@ -16,6 +28,33 @@ async function handleRequest(request) {
     return new Response(null, {
       headers: corsHeaders
     })
+  }
+
+  const url = new URL(request.url)
+  
+  // Admin işlemleri için endpoint'ler
+  if (url.pathname === '/admin/login') {
+    return handleAdminLogin(request, corsHeaders)
+  }
+  
+  if (url.pathname === '/admin/change-password') {
+    return handleChangePassword(request, corsHeaders)
+  }
+
+  // Fon yönetimi endpoint'leri
+  if (url.pathname === '/admin/funds') {
+    switch (request.method) {
+      case 'GET':
+        return handleGetFunds(corsHeaders)
+      case 'POST':
+        return handleAddFund(request, corsHeaders)
+      case 'PUT':
+        return handleUpdateFund(request, corsHeaders)
+      case 'DELETE':
+        return handleDeleteFund(request, corsHeaders)
+      default:
+        return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    }
   }
 
   try {
@@ -61,6 +100,171 @@ async function handleRequest(request) {
         ...corsHeaders,
         'Content-Type': 'application/json'
       }
+    })
+  }
+}
+
+async function handleAdminLogin(request, corsHeaders) {
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+  }
+
+  const { username, password } = await request.json()
+
+  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+    return new Response(JSON.stringify({ success: true }), {
+      headers: corsHeaders
+    })
+  }
+
+  return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+    status: 401,
+    headers: corsHeaders
+  })
+}
+
+async function handleChangePassword(request, corsHeaders) {
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+  }
+
+  try {
+    const { currentPassword, newPassword } = await request.json()
+
+    if (currentPassword !== ADMIN_CREDENTIALS.password) {
+      return new Response(JSON.stringify({ error: 'Mevcut şifre yanlış' }), {
+        status: 401,
+        headers: corsHeaders
+      })
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return new Response(JSON.stringify({ error: 'Yeni şifre en az 6 karakter olmalıdır' }), {
+        status: 400,
+        headers: corsHeaders
+      })
+    }
+
+    // Şifreyi güncelle
+    ADMIN_CREDENTIALS.password = newPassword
+
+    return new Response(JSON.stringify({ success: true, message: 'Şifre başarıyla değiştirildi' }), {
+      headers: corsHeaders
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Şifre değiştirme işlemi başarısız' }), {
+      status: 500,
+      headers: corsHeaders
+    })
+  }
+}
+
+// Fon yönetimi fonksiyonları
+async function handleGetFunds(corsHeaders) {
+  return new Response(JSON.stringify(ACTIVE_FUNDS), {
+    headers: corsHeaders
+  })
+}
+
+async function handleAddFund(request, corsHeaders) {
+  try {
+    const fund = await request.json()
+    
+    if (!fund.code || !fund.name) {
+      return new Response(JSON.stringify({ error: 'Fon kodu ve adı gerekli' }), {
+        status: 400,
+        headers: corsHeaders
+      })
+    }
+
+    if (ACTIVE_FUNDS.some(f => f.code === fund.code)) {
+      return new Response(JSON.stringify({ error: 'Bu fon kodu zaten kullanılıyor' }), {
+        status: 400,
+        headers: corsHeaders
+      })
+    }
+
+    ACTIVE_FUNDS.push({
+      code: fund.code,
+      name: fund.name,
+      active: fund.active !== false
+    })
+
+    return new Response(JSON.stringify({ success: true, message: 'Fon başarıyla eklendi' }), {
+      headers: corsHeaders
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Fon ekleme işlemi başarısız' }), {
+      status: 500,
+      headers: corsHeaders
+    })
+  }
+}
+
+async function handleUpdateFund(request, corsHeaders) {
+  try {
+    const fund = await request.json()
+    
+    if (!fund.code || !fund.name) {
+      return new Response(JSON.stringify({ error: 'Fon kodu ve adı gerekli' }), {
+        status: 400,
+        headers: corsHeaders
+      })
+    }
+
+    const index = ACTIVE_FUNDS.findIndex(f => f.code === fund.code)
+    if (index === -1) {
+      return new Response(JSON.stringify({ error: 'Fon bulunamadı' }), {
+        status: 404,
+        headers: corsHeaders
+      })
+    }
+
+    ACTIVE_FUNDS[index] = {
+      code: fund.code,
+      name: fund.name,
+      active: fund.active !== false
+    }
+
+    return new Response(JSON.stringify({ success: true, message: 'Fon başarıyla güncellendi' }), {
+      headers: corsHeaders
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Fon güncelleme işlemi başarısız' }), {
+      status: 500,
+      headers: corsHeaders
+    })
+  }
+}
+
+async function handleDeleteFund(request, corsHeaders) {
+  try {
+    const { code } = await request.json()
+    
+    if (!code) {
+      return new Response(JSON.stringify({ error: 'Fon kodu gerekli' }), {
+        status: 400,
+        headers: corsHeaders
+      })
+    }
+
+    const index = ACTIVE_FUNDS.findIndex(f => f.code === code)
+    if (index === -1) {
+      return new Response(JSON.stringify({ error: 'Fon bulunamadı' }), {
+        status: 404,
+        headers: corsHeaders
+      })
+    }
+
+    ACTIVE_FUNDS.splice(index, 1)
+
+    return new Response(JSON.stringify({ success: true, message: 'Fon başarıyla silindi' }), {
+      headers: corsHeaders
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Fon silme işlemi başarısız' }), {
+      status: 500,
+      headers: corsHeaders
     })
   }
 } 

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEFAS Admin - Dashboard</title>
+    <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         .sidebar {
             position: fixed;
@@ -37,88 +38,117 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div class="position-sticky">
-            <div class="px-3 mb-4">
-                <h5>TEFAS Admin</h5>
-            </div>
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link active" href="#dashboard">
-                        Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#funds">
-                        Fon Yönetimi
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#visitors">
-                        Ziyaretçiler
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                        Şifre Değiştir
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-danger" href="#" onclick="logout()">
-                        Çıkış Yap
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </nav>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" id="dashboardLink">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="fundsLink">
+                                <i class="bi bi-graph-up"></i> Fon Yönetimi
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="settingsLink">
+                                <i class="bi bi-gear"></i> Ayarlar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="changePasswordLink">
+                                <i class="bi bi-key"></i> Şifre Değiştir
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="logoutLink">
+                                <i class="bi bi-box-arrow-right"></i> Çıkış Yap
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
 
-    <!-- Ana İçerik -->
-    <main class="main-content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="mb-4">Dashboard</h2>
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="pageTitle">Dashboard</h1>
                 </div>
-            </div>
 
-            <!-- İstatistik Kartları -->
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Toplam Ziyaret</h5>
-                            <h2 class="card-text" id="totalVisits">-</h2>
+                <div id="dashboardContent">
+                    <!-- İstatistik Kartları -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Toplam Ziyaret</h5>
+                                    <h2 class="card-text" id="totalVisits">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Bugünkü Ziyaret</h5>
+                                    <h2 class="card-text" id="todayVisits">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Aktif Fonlar</h5>
+                                    <h2 class="card-text" id="activeFunds">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Son Güncelleme</h5>
+                                    <p class="card-text" id="lastUpdate">-</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Bugünkü Ziyaret</h5>
-                            <h2 class="card-text" id="todayVisits">-</h2>
+
+                <div id="fundsContent" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <button class="btn btn-primary" id="addFundBtn">
+                                <i class="bi bi-plus"></i> Yeni Fon Ekle
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Aktif Fonlar</h5>
-                            <h2 class="card-text" id="activeFunds">-</h2>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fon Kodu</th>
+                                    <th>Fon Adı</th>
+                                    <th>Durum</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fundsTableBody">
+                                <!-- Fon listesi buraya gelecek -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Son Güncelleme</h5>
-                            <p class="card-text" id="lastUpdate">-</p>
-                        </div>
-                    </div>
+
+                <div id="settingsContent" style="display: none;">
+                    <h2>Ayarlar</h2>
+                    <p>Ayarlar sayfası yapım aşamasında...</p>
                 </div>
-            </div>
+            </main>
         </div>
-    </main>
+    </div>
 
     <!-- Şifre Değiştirme Modal -->
     <div class="modal fade" id="changePasswordModal" tabindex="-1">
@@ -131,102 +161,267 @@
                 <div class="modal-body">
                     <form id="changePasswordForm">
                         <div class="mb-3">
-                            <label class="form-label">Mevcut Şifre</label>
+                            <label for="currentPassword" class="form-label">Mevcut Şifre</label>
                             <input type="password" class="form-control" id="currentPassword" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Yeni Şifre</label>
+                            <label for="newPassword" class="form-label">Yeni Şifre</label>
                             <input type="password" class="form-control" id="newPassword" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Yeni Şifre (Tekrar)</label>
+                            <label for="confirmPassword" class="form-label">Yeni Şifre (Tekrar)</label>
                             <input type="password" class="form-control" id="confirmPassword" required>
                         </div>
-                        <div class="alert alert-danger" id="passwordError" style="display: none;"></div>
-                        <div class="alert alert-success" id="passwordSuccess" style="display: none;"></div>
+                        <div id="passwordError" class="alert alert-danger" style="display: none;"></div>
+                        <div id="passwordSuccess" class="alert alert-success" style="display: none;"></div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="button" class="btn btn-primary" onclick="changePassword()">Değiştir</button>
+                    <button type="button" class="btn btn-primary" id="savePasswordBtn">Kaydet</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Fon Ekleme/Düzenleme Modal -->
+    <div class="modal fade" id="fundModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fundModalTitle">Yeni Fon Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="fundForm">
+                        <div class="mb-3">
+                            <label for="fundCode" class="form-label">Fon Kodu</label>
+                            <input type="text" class="form-control" id="fundCode" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fundName" class="form-label">Fon Adı</label>
+                            <input type="text" class="form-control" id="fundName" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="fundStatus" checked>
+                                <label class="form-check-label" for="fundStatus">Aktif</label>
+                            </div>
+                        </div>
+                        <div id="fundError" class="alert alert-danger" style="display: none;"></div>
+                        <div id="fundSuccess" class="alert alert-success" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" id="saveFundBtn">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Token kontrolü
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-            window.location.href = 'index.html';
+        // Modal ve form elementleri
+        const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+        const fundModal = new bootstrap.Modal(document.getElementById('fundModal'));
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        const fundForm = document.getElementById('fundForm');
+        const passwordError = document.getElementById('passwordError');
+        const passwordSuccess = document.getElementById('passwordSuccess');
+        const fundError = document.getElementById('fundError');
+        const fundSuccess = document.getElementById('fundSuccess');
+
+        // Sayfa içeriği elementleri
+        const pageTitle = document.getElementById('pageTitle');
+        const dashboardContent = document.getElementById('dashboardContent');
+        const fundsContent = document.getElementById('fundsContent');
+        const settingsContent = document.getElementById('settingsContent');
+
+        // Aktif fonlar listesi
+        let activeFunds = [
+            { code: 'YAF', name: 'Yapı Kredi Portföy Yabancı Teknoloji Sektörü Hisse Senedi Fonu', active: true },
+            { code: 'TI2', name: 'İş Portföy Elektrikli Araçlar Karma Fon', active: true },
+            { code: 'AFT', name: 'Ak Portföy Yeni Teknolojiler Yabancı Hisse Senedi Fonu', active: true }
+        ];
+
+        // Event Listeners
+        document.getElementById('dashboardLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showDashboard();
+        });
+
+        document.getElementById('fundsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showFunds();
+        });
+
+        document.getElementById('settingsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showSettings();
+        });
+
+        document.getElementById('changePasswordLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            changePasswordModal.show();
+        });
+
+        document.getElementById('logoutLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+
+        document.getElementById('addFundBtn').addEventListener('click', () => {
+            document.getElementById('fundModalTitle').textContent = 'Yeni Fon Ekle';
+            fundForm.reset();
+            fundModal.show();
+        });
+
+        document.getElementById('savePasswordBtn').addEventListener('click', changePassword);
+        document.getElementById('saveFundBtn').addEventListener('click', saveFund);
+
+        // Sayfa içeriği fonksiyonları
+        function showDashboard() {
+            pageTitle.textContent = 'Dashboard';
+            dashboardContent.style.display = 'block';
+            fundsContent.style.display = 'none';
+            settingsContent.style.display = 'none';
+            setActiveLink('dashboardLink');
+            updateDashboardStats();
         }
 
-        // Verileri yükle
-        async function loadData() {
-            try {
-                const response = await fetch('https://tefas-admin.techbrkn.workers.dev/admin/data', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('API erişim hatası');
-                }
-
-                const data = await response.json();
-                updateDashboard(data);
-            } catch (error) {
-                console.error('Veri yükleme hatası:', error);
-            }
+        function showFunds() {
+            pageTitle.textContent = 'Fon Yönetimi';
+            dashboardContent.style.display = 'none';
+            fundsContent.style.display = 'block';
+            settingsContent.style.display = 'none';
+            setActiveLink('fundsLink');
+            updateFundsTable();
         }
 
-        // Dashboard verilerini güncelle
-        function updateDashboard(data) {
-            // Toplam ziyaret
-            document.getElementById('totalVisits').textContent = data.stats?.totalVisits || 0;
+        function showSettings() {
+            pageTitle.textContent = 'Ayarlar';
+            dashboardContent.style.display = 'none';
+            fundsContent.style.display = 'none';
+            settingsContent.style.display = 'block';
+            setActiveLink('settingsLink');
+        }
+
+        function setActiveLink(linkId) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.getElementById(linkId).classList.add('active');
+        }
+
+        // Fon yönetimi fonksiyonları
+        function updateFundsTable() {
+            const tbody = document.getElementById('fundsTableBody');
+            tbody.innerHTML = '';
+
+            activeFunds.forEach(fund => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${fund.code}</td>
+                    <td>${fund.name}</td>
+                    <td>
+                        <span class="badge ${fund.active ? 'bg-success' : 'bg-danger'}">
+                            ${fund.active ? 'Aktif' : 'Pasif'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-1" onclick="editFund('${fund.code}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFund('${fund.code}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateDashboardStats() {
+            // Aktif fon sayısını güncelle
+            document.getElementById('activeFunds').textContent = activeFunds.filter(f => f.active).length;
             
-            // Bugünkü ziyaret
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('todayVisits').textContent = data.stats?.daily?.[today] || 0;
-            
-            // Aktif fonlar
-            document.getElementById('activeFunds').textContent = Object.keys(data.funds || {}).length;
-            
-            // Son güncelleme
+            // Son güncelleme zamanını güncelle
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('tr-TR');
         }
 
-        // Şifre değiştirme
+        function saveFund() {
+            const code = document.getElementById('fundCode').value;
+            const name = document.getElementById('fundName').value;
+            const active = document.getElementById('fundStatus').checked;
+
+            if (!code || !name) {
+                fundError.textContent = 'Tüm alanları doldurun!';
+                fundError.style.display = 'block';
+                return;
+            }
+
+            const existingFundIndex = activeFunds.findIndex(f => f.code === code);
+            if (existingFundIndex === -1) {
+                // Yeni fon ekle
+                activeFunds.push({ code, name, active });
+            } else {
+                // Mevcut fonu güncelle
+                activeFunds[existingFundIndex] = { code, name, active };
+            }
+
+            updateFundsTable();
+            updateDashboardStats();
+            fundModal.hide();
+            fundForm.reset();
+        }
+
+        function editFund(code) {
+            const fund = activeFunds.find(f => f.code === code);
+            if (fund) {
+                document.getElementById('fundModalTitle').textContent = 'Fon Düzenle';
+                document.getElementById('fundCode').value = fund.code;
+                document.getElementById('fundName').value = fund.name;
+                document.getElementById('fundStatus').checked = fund.active;
+                fundModal.show();
+            }
+        }
+
+        function deleteFund(code) {
+            if (confirm('Bu fonu silmek istediğinize emin misiniz?')) {
+                activeFunds = activeFunds.filter(f => f.code !== code);
+                updateFundsTable();
+                updateDashboardStats();
+            }
+        }
+
+        // Şifre değiştirme fonksiyonu
         async function changePassword() {
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const errorElement = document.getElementById('passwordError');
-            const successElement = document.getElementById('passwordSuccess');
 
-            errorElement.style.display = 'none';
-            successElement.style.display = 'none';
+            // Hata mesajlarını temizle
+            passwordError.style.display = 'none';
+            passwordSuccess.style.display = 'none';
 
             // Şifre kontrolü
-            if (currentPassword !== token) {
-                errorElement.textContent = 'Mevcut şifre hatalı!';
-                errorElement.style.display = 'block';
+            if (newPassword !== confirmPassword) {
+                passwordError.textContent = 'Yeni şifreler eşleşmiyor!';
+                passwordError.style.display = 'block';
                 return;
             }
 
-            if (newPassword !== confirmPassword) {
-                errorElement.textContent = 'Yeni şifreler eşleşmiyor!';
-                errorElement.style.display = 'block';
+            if (newPassword.length < 6) {
+                passwordError.textContent = 'Yeni şifre en az 6 karakter olmalıdır!';
+                passwordError.style.display = 'block';
                 return;
             }
 
             try {
-                // Worker'a şifre değiştirme isteği gönder
-                const response = await fetch('https://tefas-admin.techbrkn.workers.dev/admin/change-password', {
+                const response = await fetch('/admin/change-password', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -235,45 +430,42 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error('Şifre değiştirme başarısız');
+                const data = await response.json();
+
+                if (response.ok) {
+                    passwordSuccess.textContent = 'Şifre başarıyla değiştirildi!';
+                    passwordSuccess.style.display = 'block';
+                    setTimeout(() => {
+                        changePasswordModal.hide();
+                        changePasswordForm.reset();
+                    }, 2000);
+                } else {
+                    passwordError.textContent = data.error || 'Şifre değiştirme başarısız!';
+                    passwordError.style.display = 'block';
                 }
-
-                // Başarılı
-                successElement.textContent = 'Şifre başarıyla değiştirildi!';
-                successElement.style.display = 'block';
-                
-                // LocalStorage'ı güncelle
-                localStorage.setItem('adminToken', newPassword);
-                
-                // Formu temizle
-                document.getElementById('changePasswordForm').reset();
-                
-                // 2 saniye sonra modalı kapat
-                setTimeout(() => {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-                    modal.hide();
-                }, 2000);
-
             } catch (error) {
-                errorElement.textContent = 'Sistem hatası: ' + error.message;
-                errorElement.style.display = 'block';
+                passwordError.textContent = 'Sistem hatası: Şifre değiştirme başarısız';
+                passwordError.style.display = 'block';
             }
         }
 
-        // Çıkış yap
+        // Çıkış yapma fonksiyonu
         function logout() {
-            localStorage.removeItem('adminToken');
-            window.location.href = 'index.html';
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = '/admin/';
         }
 
-        // Sayfa yüklendiğinde verileri getir
-        document.addEventListener('DOMContentLoaded', loadData);
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', () => {
+            // Login kontrolü
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = '/admin/';
+                return;
+            }
 
-        // Her 60 saniyede bir verileri güncelle
-        setInterval(loadData, 60000);
+            // Dashboard verilerini güncelle
+            updateDashboardStats();
+        });
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 
