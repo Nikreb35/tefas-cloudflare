@@ -1,8 +1,8 @@
 // CORS ayarları
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://tefas-cloudflare.pages.dev',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
+  'Access-Control-Allow-Headers': '*',
   'Access-Control-Max-Age': '86400',
   'Access-Control-Allow-Credentials': 'true',
   'Content-Type': 'application/json'
