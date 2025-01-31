@@ -4,8 +4,8 @@ addEventListener('fetch', event => {
 
 // Admin bilgilerini environment variables'dan al
 const ADMIN_CREDENTIALS = {
-  username: ADMIN_USERNAME, // Cloudflare'de tanımlanacak
-  password: ADMIN_PASSWORD  // Cloudflare'de tanımlanacak
+  username: ADMIN_USERNAME || 'admin', // Fallback değer
+  password: ADMIN_PASSWORD // Environment variable'dan al
 }
 
 // Aktif fonlar listesi
