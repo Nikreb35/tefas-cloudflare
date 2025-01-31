@@ -8,8 +8,8 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
-// Güvenli token kontrolü
-const ADMIN_TOKEN = 'your-secret-token';
+// Admin token'ı environment variable'dan al
+const ADMIN_TOKEN = env.ADMIN_TOKEN;
 
 // Ziyaretçi bilgilerini kaydet
 async function logVisitor(request, env) {
