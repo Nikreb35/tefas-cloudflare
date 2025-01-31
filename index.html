@@ -272,6 +272,20 @@
     <script>
         const API_URL = 'https://tefas-proxy.techbrkn.workers.dev';
         
+        // Hesaplama fonksiyonu
+        function hesaplaGetiri(tutar, getiriOrani, yonetimUcreti) {
+            const brutGetiri = tutar * (getiriOrani / 100);
+            const yonetimUcretiTutari = brutGetiri * (yonetimUcreti / 100);
+            const yuHesaplanmis = brutGetiri - yonetimUcretiTutari;
+            const yuVeStopajHesaplanmis = yuHesaplanmis * 0.90;
+            
+            return {
+                brut: brutGetiri,
+                yuHesaplanmis: yuHesaplanmis,
+                yuVeStopajHesaplanmis: yuVeStopajHesaplanmis
+            };
+        }
+
         // Yönetim ücretleri
         async function getYonetimUcretleri() {
             try {
@@ -417,20 +431,6 @@
             }
         }
 
-        // Hesaplama fonksiyonu
-        function hesaplaGetiri(tutar, getiriOrani, yonetimUcreti) {
-            const brutGetiri = tutar * (getiriOrani / 100);
-            const yonetimUcretiTutari = brutGetiri * (yonetimUcreti / 100);
-            const yuHesaplanmis = brutGetiri - yonetimUcretiTutari;
-            const yuVeStopajHesaplanmis = yuHesaplanmis * 0.90;
-            
-            return {
-                brut: brutGetiri,
-                yuHesaplanmis: yuHesaplanmis,
-                yuVeStopajHesaplanmis: yuVeStopajHesaplanmis
-            };
-        }
-
         // Tahvil verilerini güncelle
         async function updateTahvilVerileri() {
             try {
@@ -546,6 +546,42 @@
                                 `;
                                 
                                 this.closest('.row').querySelector('.col:last-child').innerHTML = sonucHtml;
+
+                                // Toplamları hesapla
+                                let brutToplam = 0;
+                                let yuToplam = 0;
+                                let yuVeStopajToplam = 0;
+
+                                document.querySelectorAll('.row.mb-3 input[type="number"]').forEach(input => {
+                                    const value = parseFloat(input.value) || 0;
+                                    const getiri = parseFloat(input.closest('.row').querySelector('.getiri-span').textContent.replace('%', '').replace(',', '.')) || 0;
+                                    const code = input.closest('.row').querySelector('.col:first-child').textContent.trim();
+                                    const fund = funds[code];
+                                    if (fund) {
+                                        const sonuc = hesaplaGetiri(value, getiri, fund.managementFee);
+                                        brutToplam += sonuc.brut;
+                                        yuToplam += sonuc.yuHesaplanmis;
+                                        yuVeStopajToplam += sonuc.yuVeStopajHesaplanmis;
+                                    }
+                                });
+
+                                // Brüt toplam güncelle
+                                document.getElementById('brutToplam').textContent = brutToplam >= 0 ? 
+                                    `+${brutToplam.toFixed(2)}` : 
+                                    brutToplam.toFixed(2);
+                                document.getElementById('brutToplam').className = 'fw-bold ' + (brutToplam >= 0 ? 'value-positive' : 'value-negative');
+
+                                // Y.Ü Hesaplanmış toplam güncelle
+                                document.getElementById('yuToplam').textContent = yuToplam >= 0 ? 
+                                    `+${yuToplam.toFixed(2)}` : 
+                                    yuToplam.toFixed(2);
+                                document.getElementById('yuToplam').className = 'fw-bold ' + (yuToplam >= 0 ? 'value-positive' : 'value-negative');
+
+                                // Y.Ü ve Stopaj Hesaplanmış toplam güncelle
+                                document.getElementById('yuVeStopajToplam').textContent = yuVeStopajToplam >= 0 ? 
+                                    `+${yuVeStopajToplam.toFixed(2)}` : 
+                                    yuVeStopajToplam.toFixed(2);
+                                document.getElementById('yuVeStopajToplam').className = 'fw-bold ' + (yuVeStopajToplam >= 0 ? 'value-positive' : 'value-negative');
                             } else {
                                 this.closest('.row').querySelector('.col:last-child').textContent = '-';
                             }
