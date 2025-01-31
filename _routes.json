@@ -5,17 +5,17 @@
   "routes": [
     {
       "pattern": "/admin/login",
-      "zone_name": "techbrkn.workers.dev",
+      "zone_name": "pages.dev",
       "service": "tefas-cloudflare"
     },
     {
       "pattern": "/admin/change-password",
-      "zone_name": "techbrkn.workers.dev",
+      "zone_name": "pages.dev",
       "service": "tefas-cloudflare"
     },
     {
       "pattern": "/admin/funds",
-      "zone_name": "techbrkn.workers.dev",
+      "zone_name": "pages.dev",
       "service": "tefas-cloudflare"
     }
   ]
