@@ -6,15 +6,16 @@ addEventListener('fetch', event => {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
+  'Access-Control-Allow-Headers': '*',
   'Access-Control-Max-Age': '86400',
-  'Access-Control-Expose-Headers': '*'
+  'Access-Control-Expose-Headers': '*',
+  'Content-Type': 'application/json'
 }
 
 // Admin bilgilerini environment variables'dan al
 const ADMIN_CREDENTIALS = {
-  username: ADMIN_USERNAME || 'admin', // Fallback değer
-  password: ADMIN_PASSWORD // Environment variable'dan al
+  username: ADMIN_USERNAME || 'admin',
+  password: ADMIN_PASSWORD
 }
 
 // Aktif fonlar listesi
@@ -46,13 +47,10 @@ async function verifyToken(request) {
 }
 
 async function handleRequest(request) {
-  // OPTIONS isteği için CORS headers döndür
+  // OPTIONS isteklerini hemen yanıtla
   if (request.method === 'OPTIONS') {
     return new Response(null, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
+      headers: corsHeaders
     })
   }
 
@@ -60,7 +58,32 @@ async function handleRequest(request) {
   
   // Admin işlemleri için endpoint'ler
   if (url.pathname === '/admin/login') {
-    return handleAdminLogin(request)
+    if (request.method === 'POST') {
+      try {
+        const { username, password } = await request.json()
+
+        if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+          return new Response(JSON.stringify({ success: true }), {
+            headers: corsHeaders
+          })
+        }
+
+        return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+          status: 401,
+          headers: corsHeaders
+        })
+      } catch (error) {
+        return new Response(JSON.stringify({ error: 'Invalid request' }), {
+          status: 400,
+          headers: corsHeaders
+        })
+      }
+    }
+
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: corsHeaders
+    })
   }
 
   // Token kontrolü gerektiren endpoint'ler
@@ -87,10 +110,7 @@ async function handleRequest(request) {
       default:
         return new Response('Method not allowed', { 
           status: 405, 
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
+          headers: corsHeaders
         })
     }
   }
@@ -134,51 +154,7 @@ async function handleRequest(request) {
     console.error('Hata:', err)
     return new Response(JSON.stringify({ error: err.message }), { 
       status: err.message.includes('target-url') ? 400 : 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    })
-  }
-}
-
-async function handleAdminLogin(request) {
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    })
-  }
-
-  try {
-    const { username, password } = await request.json()
-
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-      return new Response(JSON.stringify({ success: true }), {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      })
-    }
-
-    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-      status: 401,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Invalid request' }), {
-      status: 400,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
+      headers: corsHeaders
     })
   }
 }
@@ -187,10 +163,7 @@ async function handleChangePassword(request) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { 
       status: 405, 
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
+      headers: corsHeaders
     })
   }
 
@@ -200,20 +173,14 @@ async function handleChangePassword(request) {
     if (currentPassword !== ADMIN_CREDENTIALS.password) {
       return new Response(JSON.stringify({ error: 'Mevcut şifre yanlış' }), {
         status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
+        headers: corsHeaders
       })
     }
 
     if (!newPassword || newPassword.length < 6) {
       return new Response(JSON.stringify({ error: 'Yeni şifre en az 6 karakter olmalıdır' }), {
         status: 400,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
+        headers: corsHeaders
       })
     }
 
@@ -221,18 +188,12 @@ async function handleChangePassword(request) {
     ADMIN_CREDENTIALS.password = newPassword
 
     return new Response(JSON.stringify({ success: true, message: 'Şifre başarıyla değiştirildi' }), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
+      headers: corsHeaders
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Şifre değiştirme işlemi başarısız' }), {
       status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
+      headers: corsHeaders
     })
   }
 }
