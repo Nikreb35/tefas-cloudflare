@@ -1,124 +1,242 @@
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
-
-// CORS headers
+// CORS ayarları
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://tefas-cloudflare.pages.dev',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
-  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
   'Access-Control-Max-Age': '86400',
-  'Access-Control-Expose-Headers': '*',
+  'Access-Control-Allow-Credentials': 'true',
   'Content-Type': 'application/json'
+};
+
+// Güvenli token kontrolü
+const ADMIN_TOKEN = 'your-secret-token';
+
+// Ziyaretçi bilgilerini kaydet
+async function logVisitor(request, env) {
+  const cf = request.cf; // Cloudflare bilgileri
+  const timestamp = new Date().toISOString();
+  
+  // Tarayıcı tespiti
+  const ua = request.headers.get('user-agent') || 'Unknown';
+  let browser = 'Other';
+  if (ua.includes('Chrome')) browser = 'Chrome';
+  else if (ua.includes('Firefox')) browser = 'Firefox';
+  else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+  else if (ua.includes('Edge')) browser = 'Edge';
+  
+  const visitorInfo = {
+    timestamp,
+    ip: cf?.ip || request.headers.get('cf-connecting-ip'),
+    country: cf?.country || 'Unknown',
+    city: cf?.city || 'Unknown',
+    continent: cf?.continent || 'Unknown',
+    userAgent: ua,
+    browser: browser,
+    referer: request.headers.get('referer') || 'Direct',
+    requestUrl: request.url,
+    language: request.headers.get('accept-language')
+  };
+
+  try {
+    // Ziyaretçi listesini al
+    let visitors = await env.ADMIN_STORE.get('visitors', 'json') || [];
+    visitors.unshift(visitorInfo); // Yeni ziyaretçiyi başa ekle
+    
+    // Son 1000 ziyaretçiyi tut
+    if (visitors.length > 1000) {
+      visitors = visitors.slice(0, 1000);
+    }
+
+    // İstatistikleri güncelle
+    let stats = await env.ADMIN_STORE.get('stats', 'json') || {
+      totalVisits: 0,
+      countries: {},
+      browsers: {},
+      hourly: Array(24).fill(0),
+      daily: {},
+      referers: {}
+    };
+
+    // Temel istatistikleri güncelle
+    stats.totalVisits++;
+    stats.countries[visitorInfo.country] = (stats.countries[visitorInfo.country] || 0) + 1;
+    stats.browsers[browser] = (stats.browsers[browser] || 0) + 1;
+    
+    // Saatlik istatistik
+    const hour = new Date(timestamp).getHours();
+    stats.hourly[hour]++;
+    
+    // Günlük istatistik
+    const today = new Date(timestamp).toISOString().split('T')[0];
+    stats.daily[today] = (stats.daily[today] || 0) + 1;
+    
+    // Referrer istatistiği
+    const referer = visitorInfo.referer === 'Direct' ? 'Direct' : new URL(visitorInfo.referer).hostname;
+    stats.referers[referer] = (stats.referers[referer] || 0) + 1;
+
+    // Verileri kaydet
+    await Promise.all([
+      env.ADMIN_STORE.put('visitors', JSON.stringify(visitors)),
+      env.ADMIN_STORE.put('stats', JSON.stringify(stats))
+    ]);
+
+  } catch (error) {
+    console.error('Ziyaretçi kaydı hatası:', error);
+  }
 }
 
-// Admin bilgilerini environment variables'dan al
-const ADMIN_CREDENTIALS = {
-  username: ADMIN_USERNAME || 'admin',
-  password: ADMIN_PASSWORD
-}
-
-// Aktif fonlar listesi
-let ACTIVE_FUNDS = [
-  { code: 'NJR', name: 'NUROL PORTFÖY BİRİNCİ BORÇLANMA ARAÇLARI FONU', active: true },
-  { code: 'TBT', name: 'TEB PORTFÖY BORÇLANMA ARAÇLARI FONU', active: true },
-  { code: 'HPT', name: 'HSBC PORTFÖY KISA VADELİ BORÇLANMA ARAÇLARI (TL) FONU', active: true }
-]
-
-// Token kontrolü fonksiyonu
-async function verifyToken(request) {
+// Admin paneli için yetkilendirme
+async function handleAuth(request) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Token gerekli' }), {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: corsHeaders
     });
   }
-
   const token = authHeader.split(' ')[1];
-  if (token !== ADMIN_CREDENTIALS.password) {
-    return new Response(JSON.stringify({ error: 'Geçersiz token' }), {
+  if (token !== ADMIN_TOKEN) {
+    return new Response(JSON.stringify({ error: 'Invalid token' }), {
       status: 401,
       headers: corsHeaders
     });
   }
-
   return null;
 }
 
-async function handleRequest(request) {
-  // OPTIONS isteklerini hemen yanıtla
+// Admin panel işlemleri
+async function handleAdminRequest(request, env) {
   if (request.method === 'OPTIONS') {
     return new Response(null, {
-      headers: corsHeaders
-    })
-  }
-
-  const url = new URL(request.url)
-  
-  // Admin işlemleri için endpoint'ler
-  if (url.pathname === '/admin/login') {
-    if (request.method === 'POST') {
-      try {
-        const { username, password } = await request.json()
-
-        if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-          return new Response(JSON.stringify({ success: true }), {
-            headers: corsHeaders
-          })
-        }
-
-        return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-          status: 401,
-          headers: corsHeaders
-        })
-      } catch (error) {
-        return new Response(JSON.stringify({ error: 'Invalid request' }), {
-          status: 400,
-          headers: corsHeaders
-        })
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': 'https://tefas-cloudflare.pages.dev',
+        'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, DELETE',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, target-url',
+        'Access-Control-Max-Age': '86400',
+        'Access-Control-Allow-Credentials': 'true'
       }
+    });
+  }
+
+  const authError = await handleAuth(request);
+  if (authError) return authError;
+
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  // GET istekleri
+  if (request.method === 'GET') {
+    // Tüm verileri getir
+    if (path === '/admin/data') {
+      const funds = await env.ADMIN_STORE.get('funds', 'json') || {};
+      const users = await env.ADMIN_STORE.get('users', 'json') || {};
+      const visitors = await env.ADMIN_STORE.get('visitors', 'json') || [];
+      const stats = await env.ADMIN_STORE.get('stats', 'json') || {};
+      
+      return new Response(JSON.stringify({ funds, users, visitors, stats }), {
+        headers: corsHeaders
+      });
     }
 
-    return new Response('Method not allowed', {
-      status: 405,
-      headers: corsHeaders
-    })
+    // Sadece istatistikleri getir
+    if (path === '/admin/stats') {
+      const stats = await env.ADMIN_STORE.get('stats', 'json') || {};
+      return new Response(JSON.stringify(stats), {
+        headers: corsHeaders
+      });
+    }
+
+    // Son ziyaretçileri getir
+    if (path === '/admin/visitors') {
+      const visitors = await env.ADMIN_STORE.get('visitors', 'json') || [];
+      return new Response(JSON.stringify(visitors), {
+        headers: corsHeaders
+      });
+    }
   }
 
-  // Token kontrolü gerektiren endpoint'ler
-  if (url.pathname === '/admin/change-password' || url.pathname === '/admin/funds') {
-    const tokenError = await verifyToken(request);
-    if (tokenError) return tokenError;
-  }
-  
-  if (url.pathname === '/admin/change-password') {
-    return handleChangePassword(request)
-  }
+  // POST istekleri
+  if (request.method === 'POST') {
+    const data = await request.json();
 
-  // Fon yönetimi endpoint'leri
-  if (url.pathname === '/admin/funds') {
-    switch (request.method) {
-      case 'GET':
-        return handleGetFunds()
-      case 'POST':
-        return handleAddFund(request)
-      case 'PUT':
-        return handleUpdateFund(request)
-      case 'DELETE':
-        return handleDeleteFund(request)
-      default:
-        return new Response('Method not allowed', { 
-          status: 405, 
+    // Fon ekleme
+    if (path === '/admin/funds/add') {
+      const { code, managementFee } = data;
+      const funds = await env.ADMIN_STORE.get('funds', 'json') || {};
+      funds[code] = { 
+        managementFee,
+        addedAt: new Date().toISOString()
+      };
+      await env.ADMIN_STORE.put('funds', JSON.stringify(funds));
+      
+      return new Response(JSON.stringify({ success: true }), {
+        headers: corsHeaders
+      });
+    }
+
+    // Fon güncelleme
+    if (path === '/admin/funds/update') {
+      const { code, managementFee } = data;
+      const funds = await env.ADMIN_STORE.get('funds', 'json') || {};
+      if (!funds[code]) {
+        return new Response(JSON.stringify({ error: 'Fon bulunamadı' }), {
+          status: 404,
           headers: corsHeaders
-        })
+        });
+      }
+      funds[code] = { 
+        ...funds[code],
+        managementFee,
+        updatedAt: new Date().toISOString()
+      };
+      await env.ADMIN_STORE.put('funds', JSON.stringify(funds));
+      
+      return new Response(JSON.stringify({ success: true }), {
+        headers: corsHeaders
+      });
     }
+
+    // Fon silme
+    if (path === '/admin/funds/delete') {
+      const { code } = data;
+      const funds = await env.ADMIN_STORE.get('funds', 'json') || {};
+      delete funds[code];
+      await env.ADMIN_STORE.put('funds', JSON.stringify(funds));
+      
+      return new Response(JSON.stringify({ success: true }), {
+        headers: corsHeaders
+      });
+    }
+
+    // Tüm fonları silme
+    if (path === '/admin/funds/clear') {
+      await env.ADMIN_STORE.put('funds', JSON.stringify({}));
+      return new Response(JSON.stringify({ success: true }), {
+        headers: corsHeaders
+      });
+    }
+  }
+
+  return new Response(JSON.stringify({ error: 'Not found' }), {
+    status: 404,
+    headers: corsHeaders
+  });
+}
+
+// Proxy işlemleri
+async function handleProxyRequest(request, env) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const targetUrl = request.headers.get('target-url')
+    // Ziyaretçi bilgilerini kaydet
+    await logVisitor(request, env);
+
+    const targetUrl = request.headers.get('target-url');
     if (!targetUrl) {
-      throw new Error('target-url header gerekli')
+      throw new Error('target-url header gerekli');
     }
 
     const fetchOptions = {
@@ -131,15 +249,15 @@ async function handleRequest(request) {
         'Pragma': 'no-cache'
       },
       redirect: 'follow'
-    }
+    };
 
-    const response = await fetch(targetUrl, fetchOptions)
+    const response = await fetch(targetUrl, fetchOptions);
     
     if (!response.ok) {
-      throw new Error(`Hedef sunucu hatası: ${response.status} ${response.statusText}`)
+      throw new Error(`Hedef sunucu hatası: ${response.status} ${response.statusText}`);
     }
 
-    const body = await response.text()
+    const body = await response.text();
     
     return new Response(body, {
       status: 200,
@@ -148,162 +266,27 @@ async function handleRequest(request) {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
         'Pragma': 'no-cache'
       }
-    })
+    });
 
   } catch (err) {
-    console.error('Hata:', err)
     return new Response(JSON.stringify({ error: err.message }), { 
       status: err.message.includes('target-url') ? 400 : 500,
       headers: corsHeaders
-    })
+    });
   }
 }
 
-async function handleChangePassword(request) {
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders
-    })
-  }
+// Ana handler
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-  try {
-    const { currentPassword, newPassword } = await request.json()
-
-    if (currentPassword !== ADMIN_CREDENTIALS.password) {
-      return new Response(JSON.stringify({ error: 'Mevcut şifre yanlış' }), {
-        status: 401,
-        headers: corsHeaders
-      })
+    // Admin endpoint kontrolü
+    if (url.pathname.startsWith('/admin')) {
+      return handleAdminRequest(request, env);
     }
-
-    if (!newPassword || newPassword.length < 6) {
-      return new Response(JSON.stringify({ error: 'Yeni şifre en az 6 karakter olmalıdır' }), {
-        status: 400,
-        headers: corsHeaders
-      })
-    }
-
-    // Şifreyi güncelle
-    ADMIN_CREDENTIALS.password = newPassword
-
-    return new Response(JSON.stringify({ success: true, message: 'Şifre başarıyla değiştirildi' }), {
-      headers: corsHeaders
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Şifre değiştirme işlemi başarısız' }), {
-      status: 500,
-      headers: corsHeaders
-    })
-  }
-}
-
-// Fon yönetimi fonksiyonları
-async function handleGetFunds() {
-  return new Response(JSON.stringify(ACTIVE_FUNDS), {
-    headers: corsHeaders
-  })
-}
-
-async function handleAddFund(request) {
-  try {
-    const fund = await request.json()
     
-    if (!fund.code || !fund.name) {
-      return new Response(JSON.stringify({ error: 'Fon kodu ve adı gerekli' }), {
-        status: 400,
-        headers: corsHeaders
-      })
-    }
-
-    if (ACTIVE_FUNDS.some(f => f.code === fund.code)) {
-      return new Response(JSON.stringify({ error: 'Bu fon kodu zaten kullanılıyor' }), {
-        status: 400,
-        headers: corsHeaders
-      })
-    }
-
-    ACTIVE_FUNDS.push({
-      code: fund.code,
-      name: fund.name,
-      active: fund.active !== false
-    })
-
-    return new Response(JSON.stringify({ success: true, message: 'Fon başarıyla eklendi' }), {
-      headers: corsHeaders
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Fon ekleme işlemi başarısız' }), {
-      status: 500,
-      headers: corsHeaders
-    })
+    // Proxy isteği
+    return handleProxyRequest(request, env);
   }
-}
-
-async function handleUpdateFund(request) {
-  try {
-    const fund = await request.json()
-    
-    if (!fund.code || !fund.name) {
-      return new Response(JSON.stringify({ error: 'Fon kodu ve adı gerekli' }), {
-        status: 400,
-        headers: corsHeaders
-      })
-    }
-
-    const index = ACTIVE_FUNDS.findIndex(f => f.code === fund.code)
-    if (index === -1) {
-      return new Response(JSON.stringify({ error: 'Fon bulunamadı' }), {
-        status: 404,
-        headers: corsHeaders
-      })
-    }
-
-    ACTIVE_FUNDS[index] = {
-      code: fund.code,
-      name: fund.name,
-      active: fund.active !== false
-    }
-
-    return new Response(JSON.stringify({ success: true, message: 'Fon başarıyla güncellendi' }), {
-      headers: corsHeaders
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Fon güncelleme işlemi başarısız' }), {
-      status: 500,
-      headers: corsHeaders
-    })
-  }
-}
-
-async function handleDeleteFund(request) {
-  try {
-    const { code } = await request.json()
-    
-    if (!code) {
-      return new Response(JSON.stringify({ error: 'Fon kodu gerekli' }), {
-        status: 400,
-        headers: corsHeaders
-      })
-    }
-
-    const index = ACTIVE_FUNDS.findIndex(f => f.code === code)
-    if (index === -1) {
-      return new Response(JSON.stringify({ error: 'Fon bulunamadı' }), {
-        status: 404,
-        headers: corsHeaders
-      })
-    }
-
-    ACTIVE_FUNDS.splice(index, 1)
-
-    return new Response(JSON.stringify({ success: true, message: 'Fon başarıyla silindi' }), {
-      headers: corsHeaders
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Fon silme işlemi başarısız' }), {
-      status: 500,
-      headers: corsHeaders
-    })
-  }
-} 
+}; 
