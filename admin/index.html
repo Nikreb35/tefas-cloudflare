@@ -72,16 +72,17 @@
                 const response = await fetch(`${API_URL}/admin/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${password}`
                     },
                     body: JSON.stringify({ username, password })
                 });
 
                 const data = await response.json();
 
-                if (response.ok && data.success) {
+                if (response.ok && data.token) {
                     // Token'ı localStorage'a kaydet
-                    localStorage.setItem('adminToken', password);
+                    localStorage.setItem('adminToken', data.token);
                     window.location.href = 'dashboard.html';
                 } else {
                     // Hatalı giriş

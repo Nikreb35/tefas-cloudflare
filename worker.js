@@ -158,6 +158,28 @@ async function handleAdminRequest(request, env) {
 
   // POST istekleri
   if (request.method === 'POST') {
+    // Login işlemi
+    if (path === '/admin/login') {
+      const { username, password } = await request.json();
+      
+      if (username === 'admin' && password === env.ADMIN_PASSWORD) {
+        return new Response(JSON.stringify({ 
+          token: env.ADMIN_PASSWORD,
+          success: true 
+        }), {
+          headers: corsHeaders
+        });
+      }
+      
+      return new Response(JSON.stringify({ 
+        error: 'Kullanıcı adı veya şifre hatalı!',
+        success: false 
+      }), {
+        status: 401,
+        headers: corsHeaders
+      });
+    }
+
     const data = await request.json();
 
     // Fon ekleme
