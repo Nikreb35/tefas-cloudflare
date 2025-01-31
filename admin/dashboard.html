@@ -225,295 +225,131 @@
         // API URL'si
         const API_URL = 'https://tefas-admin.techbrkn.workers.dev';
 
-        // Modal ve form elementleri
-        const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
-        const fundModal = new bootstrap.Modal(document.getElementById('fundModal'));
-        const changePasswordForm = document.getElementById('changePasswordForm');
-        const fundForm = document.getElementById('fundForm');
-        const passwordError = document.getElementById('passwordError');
-        const passwordSuccess = document.getElementById('passwordSuccess');
-        const fundError = document.getElementById('fundError');
-        const fundSuccess = document.getElementById('fundSuccess');
-
-        // Sayfa içeriği elementleri
-        const pageTitle = document.getElementById('pageTitle');
-        const dashboardContent = document.getElementById('dashboardContent');
-        const fundsContent = document.getElementById('fundsContent');
-        const settingsContent = document.getElementById('settingsContent');
-
-        // Aktif fonlar listesi
-        let activeFunds = [
-            { code: 'YAF', name: 'Yapı Kredi Portföy Yabancı Teknoloji Sektörü Hisse Senedi Fonu', active: true },
-            { code: 'TI2', name: 'İş Portföy Elektrikli Araçlar Karma Fon', active: true },
-            { code: 'AFT', name: 'Ak Portföy Yeni Teknolojiler Yabancı Hisse Senedi Fonu', active: true }
-        ];
-
-        // Event Listeners
-        document.getElementById('dashboardLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            showDashboard();
-        });
-
-        document.getElementById('fundsLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            showFunds();
-        });
-
-        document.getElementById('settingsLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            showSettings();
-        });
-
-        document.getElementById('changePasswordLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            changePasswordModal.show();
-        });
-
-        document.getElementById('logoutLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-        });
-
-        document.getElementById('addFundBtn').addEventListener('click', () => {
-            document.getElementById('fundModalTitle').textContent = 'Yeni Fon Ekle';
-            fundForm.reset();
-            fundModal.show();
-        });
-
-        document.getElementById('savePasswordBtn').addEventListener('click', changePassword);
-        document.getElementById('saveFundBtn').addEventListener('click', saveFund);
-
-        // Sayfa içeriği fonksiyonları
-        function showDashboard() {
-            pageTitle.textContent = 'Dashboard';
-            dashboardContent.style.display = 'block';
-            fundsContent.style.display = 'none';
-            settingsContent.style.display = 'none';
-            setActiveLink('dashboardLink');
-            updateDashboardStats();
+        // Token kontrolü
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = 'index.html';
         }
 
-        function showFunds() {
-            pageTitle.textContent = 'Fon Yönetimi';
-            dashboardContent.style.display = 'none';
-            fundsContent.style.display = 'block';
-            settingsContent.style.display = 'none';
-            setActiveLink('fundsLink');
-            updateFundsTable();
-        }
-
-        function showSettings() {
-            pageTitle.textContent = 'Ayarlar';
-            dashboardContent.style.display = 'none';
-            fundsContent.style.display = 'none';
-            settingsContent.style.display = 'block';
-            setActiveLink('settingsLink');
-        }
-
-        function setActiveLink(linkId) {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            document.getElementById(linkId).classList.add('active');
-        }
-
-        // Fon yönetimi fonksiyonları
-        function updateFundsTable() {
-            const tbody = document.getElementById('fundsTableBody');
-            tbody.innerHTML = '';
-
-            activeFunds.forEach(fund => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${fund.code}</td>
-                    <td>${fund.name}</td>
-                    <td>
-                        <span class="badge ${fund.active ? 'bg-success' : 'bg-danger'}">
-                            ${fund.active ? 'Aktif' : 'Pasif'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="editFund('${fund.code}')">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteFund('${fund.code}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function updateDashboardStats() {
-            // Aktif fon sayısını güncelle
-            document.getElementById('activeFunds').textContent = activeFunds.filter(f => f.active).length;
-            
-            // Son güncelleme zamanını güncelle
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('tr-TR');
-        }
-
-        // Çıkış yapma fonksiyonu
-        function logout() {
-            localStorage.removeItem('adminToken');
-            window.location.href = '/admin/';
-        }
-
-        // Sayfa yüklendiğinde
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Token kontrolü
-            const token = localStorage.getItem('adminToken');
-            if (!token) {
-                window.location.href = '/admin/';
-                return;
-            }
-
-            // API istekleri için Authorization header'ı
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
-
-            // Fonları getir
+        // Fonları listele
+        async function loadFunds() {
             try {
-                const response = await fetch(`${API_URL}/admin/funds`, {
-                    headers
+                const response = await fetch(`${API_URL}/admin/data`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
+                const data = await response.json();
+                const funds = data.funds || {};
+                
+                const tbody = document.querySelector('#fundsTable tbody');
+                tbody.innerHTML = '';
+                
+                Object.entries(funds).forEach(([code, fund]) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${code}</td>
+                        <td>${fund.name || ''}</td>
+                        <td>${fund.managementFee || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editFund('${code}')">Düzenle</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFund('${code}')">Sil</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Fonlar yüklenirken hata:', error);
+                alert('Fonlar yüklenirken bir hata oluştu!');
+            }
+        }
 
-                if (response.ok) {
-                    const data = await response.json();
-                    activeFunds = data;
-                    updateFundsTable();
-                    updateDashboardStats();
+        // Fon ekle/güncelle
+        document.getElementById('saveFundBtn').addEventListener('click', async () => {
+            const code = document.getElementById('fundCode').value;
+            const name = document.getElementById('fundName').value;
+            const managementFee = document.getElementById('fundManagementFee').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/funds/${code ? 'update' : 'add'}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ code, name, managementFee })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    fundModal.hide();
+                    loadFunds();
+                    document.getElementById('fundForm').reset();
                 } else {
-                    console.error('Fonlar yüklenemedi');
+                    document.getElementById('fundError').textContent = data.error;
+                    document.getElementById('fundError').style.display = 'block';
                 }
             } catch (error) {
-                console.error('API hatası:', error);
+                console.error('Fon kaydedilirken hata:', error);
+                document.getElementById('fundError').textContent = 'Fon kaydedilirken bir hata oluştu!';
+                document.getElementById('fundError').style.display = 'block';
             }
+        });
 
-            // Şifre değiştirme fonksiyonu
-            async function changePassword() {
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-
-                // Hata mesajlarını temizle
-                passwordError.style.display = 'none';
-                passwordSuccess.style.display = 'none';
-
-                // Şifre kontrolü
-                if (newPassword !== confirmPassword) {
-                    passwordError.textContent = 'Yeni şifreler eşleşmiyor!';
-                    passwordError.style.display = 'block';
-                    return;
+        // Fon düzenle
+        async function editFund(code) {
+            try {
+                const response = await fetch(`${API_URL}/admin/data`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                const fund = data.funds[code];
+                
+                if (fund) {
+                    document.getElementById('fundCode').value = code;
+                    document.getElementById('fundName').value = fund.name || '';
+                    document.getElementById('fundManagementFee').value = fund.managementFee || '';
+                    fundModal.show();
                 }
+            } catch (error) {
+                console.error('Fon bilgileri alınırken hata:', error);
+                alert('Fon bilgileri alınırken bir hata oluştu!');
+            }
+        }
 
-                if (newPassword.length < 6) {
-                    passwordError.textContent = 'Yeni şifre en az 6 karakter olmalıdır!';
-                    passwordError.style.display = 'block';
-                    return;
-                }
-
+        // Fon sil
+        async function deleteFund(code) {
+            if (confirm(`${code} kodlu fonu silmek istediğinize emin misiniz?`)) {
                 try {
-                    const response = await fetch(`${API_URL}/admin/change-password`, {
+                    const response = await fetch(`${API_URL}/admin/funds/delete`, {
                         method: 'POST',
-                        headers,
-                        body: JSON.stringify({
-                            currentPassword,
-                            newPassword
-                        })
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ code })
                     });
-
+                    
                     const data = await response.json();
-
-                    if (response.ok) {
-                        passwordSuccess.textContent = 'Şifre başarıyla değiştirildi!';
-                        passwordSuccess.style.display = 'block';
-                        // Token'ı güncelle
-                        localStorage.setItem('adminToken', newPassword);
-                        setTimeout(() => {
-                            changePasswordModal.hide();
-                            changePasswordForm.reset();
-                        }, 2000);
+                    
+                    if (data.success) {
+                        loadFunds();
                     } else {
-                        passwordError.textContent = data.error || 'Şifre değiştirme başarısız!';
-                        passwordError.style.display = 'block';
+                        alert(data.error || 'Fon silinirken bir hata oluştu!');
                     }
                 } catch (error) {
-                    console.error('API hatası:', error);
-                    passwordError.textContent = 'Sistem hatası: Şifre değiştirme başarısız';
-                    passwordError.style.display = 'block';
+                    console.error('Fon silinirken hata:', error);
+                    alert('Fon silinirken bir hata oluştu!');
                 }
             }
+        }
 
-            // Fon yönetimi fonksiyonları
-            async function saveFund() {
-                const code = document.getElementById('fundCode').value;
-                const name = document.getElementById('fundName').value;
-                const active = document.getElementById('fundStatus').checked;
-
-                if (!code || !name) {
-                    fundError.textContent = 'Tüm alanları doldurun!';
-                    fundError.style.display = 'block';
-                    return;
-                }
-
-                try {
-                    const method = activeFunds.some(f => f.code === code) ? 'PUT' : 'POST';
-                    const response = await fetch(`${API_URL}/admin/funds`, {
-                        method,
-                        headers,
-                        body: JSON.stringify({ code, name, active })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        // Fon listesini güncelle
-                        if (method === 'POST') {
-                            activeFunds.push({ code, name, active });
-                        } else {
-                            const index = activeFunds.findIndex(f => f.code === code);
-                            activeFunds[index] = { code, name, active };
-                        }
-                        updateFundsTable();
-                        updateDashboardStats();
-                        fundModal.hide();
-                        fundForm.reset();
-                    } else {
-                        fundError.textContent = data.error || 'İşlem başarısız!';
-                        fundError.style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('API hatası:', error);
-                    fundError.textContent = 'Sistem hatası: İşlem başarısız';
-                    fundError.style.display = 'block';
-                }
-            }
-
-            async function deleteFund(code) {
-                if (confirm('Bu fonu silmek istediğinize emin misiniz?')) {
-                    try {
-                        const response = await fetch(`${API_URL}/admin/funds`, {
-                            method: 'DELETE',
-                            headers,
-                            body: JSON.stringify({ code })
-                        });
-
-                        if (response.ok) {
-                            activeFunds = activeFunds.filter(f => f.code !== code);
-                            updateFundsTable();
-                            updateDashboardStats();
-                        } else {
-                            alert('Fon silme işlemi başarısız!');
-                        }
-                    } catch (error) {
-                        console.error('API hatası:', error);
-                        alert('Sistem hatası: Fon silme işlemi başarısız');
-                    }
-                }
-            }
+        // Sayfa yüklendiğinde fonları listele
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFunds();
         });
     </script>
 </body>

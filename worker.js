@@ -184,9 +184,10 @@ async function handleAdminRequest(request, env) {
 
     // Fon ekleme
     if (path === '/admin/funds/add') {
-      const { code, managementFee } = data;
+      const { code, name, managementFee } = data;
       const funds = await env.ADMIN_STORE.get('funds', 'json') || {};
       funds[code] = { 
+        name,
         managementFee,
         addedAt: new Date().toISOString()
       };
@@ -199,7 +200,7 @@ async function handleAdminRequest(request, env) {
 
     // Fon güncelleme
     if (path === '/admin/funds/update') {
-      const { code, managementFee } = data;
+      const { code, name, managementFee } = data;
       const funds = await env.ADMIN_STORE.get('funds', 'json') || {};
       if (!funds[code]) {
         return new Response(JSON.stringify({ error: 'Fon bulunamadı' }), {
@@ -209,6 +210,7 @@ async function handleAdminRequest(request, env) {
       }
       funds[code] = { 
         ...funds[code],
+        name,
         managementFee,
         updatedAt: new Date().toISOString()
       };
