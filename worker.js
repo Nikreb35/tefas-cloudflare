@@ -2,16 +2,17 @@ addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
 
+// Admin bilgilerini environment variables'dan al
 const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'your-secret-token'
+  username: ADMIN_USERNAME, // Cloudflare'de tanımlanacak
+  password: ADMIN_PASSWORD  // Cloudflare'de tanımlanacak
 }
 
 // Aktif fonlar listesi
 let ACTIVE_FUNDS = [
-  { code: 'YAF', name: 'Yapı Kredi Portföy Yabancı Teknoloji Sektörü Hisse Senedi Fonu', active: true },
-  { code: 'TI2', name: 'İş Portföy Elektrikli Araçlar Karma Fon', active: true },
-  { code: 'AFT', name: 'Ak Portföy Yeni Teknolojiler Yabancı Hisse Senedi Fonu', active: true }
+  { code: 'NJR', name: 'NUROL PORTFÖY BİRİNCİ BORÇLANMA ARAÇLARI FONU', active: true },
+  { code: 'TBT', name: 'TEB PORTFÖY BORÇLANMA ARAÇLARI FONU', active: true },
+  { code: 'HPT', name: 'HSBC PORTFÖY KISA VADELİ BORÇLANMA ARAÇLARI (TL) FONU', active: true }
 ]
 
 // Token kontrolü fonksiyonu
