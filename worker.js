@@ -306,17 +306,17 @@ export default {
     const funds = await env.ADMIN_STORE.get('funds', 'json');
     if (!funds) {
       const defaultFunds = {
-        'NJR': {
-          name: 'Neo Portföy Yeni Teknolojiler Değişken Fon',
-          managementFee: 3.65
+        'TBT': {
+          name: 'TEB PORTFÖY BORÇLANMA ARAÇLARI FONU',
+          managementFee: 2.19
         },
-        'TI2': {
-          name: 'İş Portföy Elektrikli Araçlar Karma Fon',
-          managementFee: 3.65
+        'NJR': {
+          name: 'NUROL PORTFÖY BİRİNCİ BORÇLANMA ARAÇLARI FONU',
+          managementFee: 1.25
         },
         'HPT': {
-          name: 'HSBC Portföy Teknoloji Şirketleri Fonu',
-          managementFee: 3.65
+          name: 'HSBC PORTFÖY KISA VADELİ BORÇLANMA ARAÇLARI (TL) FONU',
+          managementFee: 2.37
         }
       };
       await env.ADMIN_STORE.put('funds', JSON.stringify(defaultFunds));
