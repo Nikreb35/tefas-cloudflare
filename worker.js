@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 // Admin token'ı environment variable'dan al
-const ADMIN_PASSWORD = env.ADMIN_PASSWORD;
+let ADMIN_PASSWORD;
 
 // Ziyaretçi bilgilerini kaydet
 async function logVisitor(request, env) {
@@ -297,6 +297,9 @@ async function handleProxyRequest(request, env) {
 // Ana handler
 export default {
   async fetch(request, env, ctx) {
+    // Admin token'ı al
+    ADMIN_PASSWORD = env.ADMIN_PASSWORD;
+
     const url = new URL(request.url);
 
     // İlk çalıştırmada varsayılan fonları ekle
