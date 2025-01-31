@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [],
+  "routes": [
+    {
+      "pattern": "/admin/login",
+      "zone_name": "techbrkn.workers.dev",
+      "service": "tefas-cloudflare"
+    },
+    {
+      "pattern": "/admin/change-password",
+      "zone_name": "techbrkn.workers.dev",
+      "service": "tefas-cloudflare"
+    },
+    {
+      "pattern": "/admin/funds",
+      "zone_name": "techbrkn.workers.dev",
+      "service": "tefas-cloudflare"
+    }
+  ]
+} 
